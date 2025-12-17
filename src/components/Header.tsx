@@ -1,6 +1,22 @@
-import { Activity, User, Bell } from 'lucide-react';
+import { Activity, User, Bell, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export const Header = () => {
+  const { user, signOut } = useAuth();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Você saiu da sua conta');
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/50">
       <div className="container flex h-16 items-center justify-between">
@@ -21,9 +37,25 @@ export const Header = () => {
               2
             </span>
           </button>
-          <button className="p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-colors">
-            <User className="h-5 w-5" />
-          </button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-colors">
+                <User className="h-5 w-5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <div className="px-2 py-1.5">
+                <p className="text-sm font-medium">{user?.email}</p>
+                <p className="text-xs text-muted-foreground">Minha conta</p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
