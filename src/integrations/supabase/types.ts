@@ -14,7 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exam_results: {
+        Row: {
+          category: string | null
+          created_at: string
+          exam_date: string
+          exam_id: string
+          id: string
+          name: string
+          reference_max: number | null
+          reference_min: number | null
+          status: string
+          unit: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          exam_date: string
+          exam_id: string
+          id?: string
+          name: string
+          reference_max?: number | null
+          reference_min?: number | null
+          status?: string
+          unit: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          exam_date?: string
+          exam_id?: string
+          id?: string
+          name?: string
+          reference_max?: number | null
+          reference_min?: number | null
+          status?: string
+          unit?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exam_results_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      exams: {
+        Row: {
+          created_at: string
+          exam_date: string | null
+          file_name: string
+          file_url: string | null
+          id: string
+          lab_name: string | null
+          processed: boolean | null
+          upload_date: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          exam_date?: string | null
+          file_name: string
+          file_url?: string | null
+          id?: string
+          lab_name?: string | null
+          processed?: boolean | null
+          upload_date?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          exam_date?: string | null
+          file_name?: string
+          file_url?: string | null
+          id?: string
+          lab_name?: string | null
+          processed?: boolean | null
+          upload_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          birth_date: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          sex: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          sex?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          birth_date?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          sex?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
