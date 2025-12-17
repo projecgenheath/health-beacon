@@ -1,0 +1,180 @@
+import { ExamResult, ExamHistory, HealthSummary, ExamStatus } from '@/types/exam';
+
+const getStatus = (value: number, min: number, max: number): ExamStatus => {
+  if (value >= min && value <= max) return 'healthy';
+  const margin = (max - min) * 0.1;
+  if (value >= min - margin && value <= max + margin) return 'warning';
+  return 'danger';
+};
+
+export const mockExamResults: ExamResult[] = [
+  {
+    id: '1',
+    name: 'Glicose em Jejum',
+    value: 95,
+    unit: 'mg/dL',
+    referenceMin: 70,
+    referenceMax: 99,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Metabolismo',
+  },
+  {
+    id: '2',
+    name: 'Colesterol Total',
+    value: 210,
+    unit: 'mg/dL',
+    referenceMin: 0,
+    referenceMax: 200,
+    status: 'warning',
+    date: '2024-12-15',
+    category: 'Lipídios',
+  },
+  {
+    id: '3',
+    name: 'HDL Colesterol',
+    value: 55,
+    unit: 'mg/dL',
+    referenceMin: 40,
+    referenceMax: 60,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Lipídios',
+  },
+  {
+    id: '4',
+    name: 'LDL Colesterol',
+    value: 145,
+    unit: 'mg/dL',
+    referenceMin: 0,
+    referenceMax: 130,
+    status: 'danger',
+    date: '2024-12-15',
+    category: 'Lipídios',
+  },
+  {
+    id: '5',
+    name: 'Triglicerídeos',
+    value: 148,
+    unit: 'mg/dL',
+    referenceMin: 0,
+    referenceMax: 150,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Lipídios',
+  },
+  {
+    id: '6',
+    name: 'Hemoglobina',
+    value: 14.5,
+    unit: 'g/dL',
+    referenceMin: 12,
+    referenceMax: 16,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Hemograma',
+  },
+  {
+    id: '7',
+    name: 'Vitamina D',
+    value: 22,
+    unit: 'ng/mL',
+    referenceMin: 30,
+    referenceMax: 100,
+    status: 'danger',
+    date: '2024-12-15',
+    category: 'Vitaminas',
+  },
+  {
+    id: '8',
+    name: 'TSH',
+    value: 2.8,
+    unit: 'mUI/L',
+    referenceMin: 0.4,
+    referenceMax: 4.0,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Tireoide',
+  },
+  {
+    id: '9',
+    name: 'Creatinina',
+    value: 1.1,
+    unit: 'mg/dL',
+    referenceMin: 0.7,
+    referenceMax: 1.3,
+    status: 'healthy',
+    date: '2024-12-15',
+    category: 'Renal',
+  },
+  {
+    id: '10',
+    name: 'Ácido Úrico',
+    value: 7.2,
+    unit: 'mg/dL',
+    referenceMin: 2.5,
+    referenceMax: 7.0,
+    status: 'warning',
+    date: '2024-12-15',
+    category: 'Metabolismo',
+  },
+];
+
+export const mockExamHistory: ExamHistory[] = [
+  {
+    examName: 'Glicose em Jejum',
+    unit: 'mg/dL',
+    referenceMin: 70,
+    referenceMax: 99,
+    history: [
+      { date: '2024-03-15', value: 88, status: 'healthy' },
+      { date: '2024-06-15', value: 92, status: 'healthy' },
+      { date: '2024-09-15', value: 98, status: 'healthy' },
+      { date: '2024-12-15', value: 95, status: 'healthy' },
+    ],
+  },
+  {
+    examName: 'Colesterol Total',
+    unit: 'mg/dL',
+    referenceMin: 0,
+    referenceMax: 200,
+    history: [
+      { date: '2024-03-15', value: 185, status: 'healthy' },
+      { date: '2024-06-15', value: 195, status: 'healthy' },
+      { date: '2024-09-15', value: 205, status: 'warning' },
+      { date: '2024-12-15', value: 210, status: 'warning' },
+    ],
+  },
+  {
+    examName: 'LDL Colesterol',
+    unit: 'mg/dL',
+    referenceMin: 0,
+    referenceMax: 130,
+    history: [
+      { date: '2024-03-15', value: 110, status: 'healthy' },
+      { date: '2024-06-15', value: 125, status: 'healthy' },
+      { date: '2024-09-15', value: 138, status: 'warning' },
+      { date: '2024-12-15', value: 145, status: 'danger' },
+    ],
+  },
+  {
+    examName: 'Vitamina D',
+    unit: 'ng/mL',
+    referenceMin: 30,
+    referenceMax: 100,
+    history: [
+      { date: '2024-03-15', value: 35, status: 'healthy' },
+      { date: '2024-06-15', value: 32, status: 'healthy' },
+      { date: '2024-09-15', value: 28, status: 'warning' },
+      { date: '2024-12-15', value: 22, status: 'danger' },
+    ],
+  },
+];
+
+export const mockHealthSummary: HealthSummary = {
+  totalExams: mockExamResults.length,
+  healthy: mockExamResults.filter(e => e.status === 'healthy').length,
+  warning: mockExamResults.filter(e => e.status === 'warning').length,
+  danger: mockExamResults.filter(e => e.status === 'danger').length,
+  lastUpdate: '15 de Dezembro, 2024',
+};
