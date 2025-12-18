@@ -1,4 +1,5 @@
-import { Activity, User, Bell, LogOut } from 'lucide-react';
+import { Activity, User, Bell, LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import {
@@ -11,6 +12,7 @@ import {
 
 export const Header = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
@@ -50,6 +52,10 @@ export const Header = () => {
                 <p className="text-xs text-muted-foreground">Minha conta</p>
               </div>
               <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Meu Perfil
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                 <LogOut className="mr-2 h-4 w-4" />
                 Sair
