@@ -2,12 +2,15 @@ import { useState, useCallback } from 'react';
 import { Upload, FileText, Camera, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export const UploadSection = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -52,15 +55,137 @@ export const UploadSection = () => {
   };
 
   const processFiles = async () => {
+    if (!user) {
+      toast({
+        title: 'Erro',
+        description: 'Você precisa estar logado para processar exames',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsProcessing(true);
-    // Simulate processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    toast({
-      title: 'Processamento concluído',
-      description: 'Seus exames foram analisados com sucesso!',
-    });
-    setUploadedFiles([]);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (const file of uploadedFiles) {
+        try {
+          // 1. Create exam record in database
+          const { data: examData, error: examError } = await supabase
+            .from('exams')
+            .insert({
+              user_id: user.id,
+              file_name: file.name,
+              upload_date: new Date().toISOString(),
+            })
+            .select()
+            .single();
+
+          if (examError) {
+            console.error('Error creating exam record:', examError);
+            errorCount++;
+            continue;
+          }
+
+          // 2. Upload file to storage
+          const filePath = `${user.id}/${examData.id}/${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from('exam-files')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            // Delete the exam record since upload failed
+            await supabase.from('exams').delete().eq('id', examData.id);
+            errorCount++;
+            continue;
+          }
+
+          // 3. Get signed URL for the file
+          const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+            .from('exam-files')
+            .createSignedUrl(filePath, 3600); // 1 hour expiry
+
+          if (signedUrlError || !signedUrlData?.signedUrl) {
+            console.error('Error getting signed URL:', signedUrlError);
+            errorCount++;
+            continue;
+          }
+
+          // 4. Update exam with file URL
+          await supabase
+            .from('exams')
+            .update({ file_url: filePath })
+            .eq('id', examData.id);
+
+          // 5. Call edge function to process with AI OCR
+          const { data: { session } } = await supabase.auth.getSession();
+          
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-exam`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token}`,
+              },
+              body: JSON.stringify({
+                fileUrl: signedUrlData.signedUrl,
+                fileName: file.name,
+                examId: examData.id,
+              }),
+            }
+          );
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            console.error('Error processing exam:', result.error);
+            toast({
+              title: 'Erro no processamento',
+              description: result.error || 'Falha ao processar o exame',
+              variant: 'destructive',
+            });
+            errorCount++;
+            continue;
+          }
+
+          successCount++;
+          console.log('Exam processed:', result);
+
+        } catch (fileError) {
+          console.error('Error processing file:', fileError);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        toast({
+          title: 'Processamento concluído',
+          description: `${successCount} exame(s) processado(s) com sucesso!`,
+        });
+      }
+
+      if (errorCount > 0 && successCount === 0) {
+        toast({
+          title: 'Erro',
+          description: `Falha ao processar ${errorCount} arquivo(s)`,
+          variant: 'destructive',
+        });
+      }
+
+      setUploadedFiles([]);
+    } catch (error) {
+      console.error('Error in processFiles:', error);
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao processar os arquivos',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -143,7 +268,7 @@ export const UploadSection = () => {
           
           <button
             onClick={processFiles}
-            disabled={isProcessing}
+            disabled={isProcessing || !user}
             className={cn(
               'w-full py-3 px-4 rounded-xl font-medium transition-all duration-300',
               'gradient-primary text-primary-foreground',
@@ -154,7 +279,7 @@ export const UploadSection = () => {
             {isProcessing ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Processando...
+                Processando com IA...
               </>
             ) : (
               'Processar Exames'
