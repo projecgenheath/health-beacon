@@ -1,1 +1,4 @@
 project_id = "cwhoepbevbbxxmylvxnl"
+
+[functions.process-exam]
+verify_jwt = false
