@@ -5,7 +5,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-export const UploadSection = () => {
+interface UploadSectionProps {
+  onUploadComplete?: () => void;
+}
+
+export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -165,6 +169,7 @@ export const UploadSection = () => {
           title: 'Processamento concluído',
           description: `${successCount} exame(s) processado(s) com sucesso!`,
         });
+        onUploadComplete?.();
       }
 
       if (errorCount > 0 && successCount === 0) {
