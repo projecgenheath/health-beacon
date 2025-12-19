@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 interface ExamsListProps {
   exams: ExamResult[];
   histories: ExamHistory[];
+  onExamDeleted?: () => void;
 }
 
 type FilterType = 'all' | 'danger' | 'warning' | 'healthy';
 
-export const ExamsList = ({ exams, histories }: ExamsListProps) => {
+export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) => {
   const [filter, setFilter] = useState<FilterType>('all');
 
   const filteredExams = exams.filter((exam) => {
@@ -66,7 +67,13 @@ export const ExamsList = ({ exams, histories }: ExamsListProps) => {
       {/* Exams list */}
       <div className="space-y-3">
         {filteredExams.map((exam, index) => (
-          <ExamCard key={exam.id} exam={exam} history={getHistory(exam.name)} index={index} />
+          <ExamCard 
+            key={exam.id} 
+            exam={exam} 
+            history={getHistory(exam.name)} 
+            index={index}
+            onDelete={onExamDeleted}
+          />
         ))}
       </div>
 

@@ -49,7 +49,7 @@ const Index = () => {
 
           {/* Right column - Exams list */}
           <div className="lg:col-span-2">
-            <ExamsList exams={exams} histories={histories} />
+            <ExamsList exams={exams} histories={histories} onExamDeleted={refetch} />
           </div>
         </div>
       </main>
