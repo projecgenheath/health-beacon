@@ -1,17 +1,33 @@
 import { useState } from 'react';
 import { ExamResult, ExamHistory } from '@/types/exam';
-import { ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExamChart } from './ExamChart';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 
 interface ExamCardProps {
   exam: ExamResult;
   history?: ExamHistory;
   index: number;
+  onDelete?: () => void;
 }
 
-export const ExamCard = ({ exam, history, index }: ExamCardProps) => {
+export const ExamCard = ({ exam, history, index, onDelete }: ExamCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const statusConfig = {
     healthy: {
@@ -52,10 +68,39 @@ export const ExamCard = ({ exam, history, index }: ExamCardProps) => {
 
   const trend = getTrend();
 
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('exam_results')
+        .delete()
+        .eq('id', exam.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Exame excluído',
+        description: `O resultado de ${exam.name} foi removido com sucesso.`,
+      });
+
+      onDelete?.();
+    } catch (error) {
+      console.error('Error deleting exam:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Não foi possível excluir o resultado do exame.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 cursor-pointer',
+        'group relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 cursor-pointer',
         config.border,
         isExpanded ? config.glow : 'shadow-sm hover:shadow-md',
         'animate-slide-up'
@@ -95,6 +140,38 @@ export const ExamCard = ({ exam, history, index }: ExamCardProps) => {
             <div className={cn('px-3 py-1.5 rounded-full text-xs font-medium', config.bg, config.text)}>
               {config.label}
             </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir resultado?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir o resultado de <strong>{exam.name}</strong>? 
+                    Esta ação não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {isDeleting ? 'Excluindo...' : 'Excluir'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             <ChevronDown
               className={cn(
