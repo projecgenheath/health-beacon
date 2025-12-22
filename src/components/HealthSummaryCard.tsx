@@ -1,12 +1,15 @@
+import { useNavigate } from 'react-router-dom';
 import { HealthSummary } from '@/types/exam';
-import { Activity, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
+import { Activity, CheckCircle2, AlertTriangle, AlertCircle, ArrowLeftRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface HealthSummaryCardProps {
   summary: HealthSummary;
 }
 
 export const HealthSummaryCard = ({ summary }: HealthSummaryCardProps) => {
-  const healthPercentage = Math.round((summary.healthy / summary.totalExams) * 100);
+  const navigate = useNavigate();
+  const healthPercentage = summary.totalExams > 0 ? Math.round((summary.healthy / summary.totalExams) * 100) : 0;
   
   return (
     <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-md animate-slide-up">
@@ -74,6 +77,17 @@ export const HealthSummaryCard = ({ summary }: HealthSummaryCardProps) => {
             <span className="text-xs text-muted-foreground">Alterado</span>
           </div>
         </div>
+
+        {summary.totalExams > 0 && (
+          <Button
+            variant="outline"
+            className="w-full mt-4"
+            onClick={() => navigate('/compare')}
+          >
+            <ArrowLeftRight className="h-4 w-4 mr-2" />
+            Comparar Exames
+          </Button>
+        )}
       </div>
     </div>
   );

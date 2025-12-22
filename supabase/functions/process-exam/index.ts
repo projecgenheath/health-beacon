@@ -230,6 +230,40 @@ Return ONLY valid JSON in this exact format:
       }
 
       console.log(`Successfully saved ${examResults.length} exam results`);
+
+      // Check for warning or danger results and send email alerts
+      const alertResults = parsedData.results.filter(r => r.status === 'warning' || r.status === 'danger');
+      if (alertResults.length > 0) {
+        console.log(`Found ${alertResults.length} results requiring attention, sending email alert...`);
+        try {
+          const alertResponse = await fetch(
+            `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-exam-alerts`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': authHeader,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                alerts: alertResults.map(r => ({
+                  name: r.name,
+                  value: r.value,
+                  unit: r.unit,
+                  status: r.status,
+                  reference_min: r.reference_min,
+                  reference_max: r.reference_max,
+                })),
+                examDate: parsedData.exam_date || new Date().toISOString().split('T')[0],
+              }),
+            }
+          );
+          const alertData = await alertResponse.json();
+          console.log('Email alert response:', alertData);
+        } catch (emailError) {
+          console.error('Failed to send email alert:', emailError);
+          // Don't fail the whole request if email fails
+        }
+      }
     }
 
     return new Response(

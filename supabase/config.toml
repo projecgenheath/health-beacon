@@ -2,3 +2,6 @@ project_id = "cwhoepbevbbxxmylvxnl"
 
 [functions.process-exam]
 verify_jwt = false
+
+[functions.send-exam-alerts]
+verify_jwt = false
