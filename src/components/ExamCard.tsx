@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ExamResult, ExamHistory } from '@/types/exam';
-import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2 } from 'lucide-react';
+import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExamChart } from './ExamChart';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,9 +24,11 @@ interface ExamCardProps {
   history?: ExamHistory;
   index: number;
   onDelete?: () => void;
+  examId?: string;
 }
 
-export const ExamCard = ({ exam, history, index, onDelete }: ExamCardProps) => {
+export const ExamCard = ({ exam, history, index, onDelete, examId }: ExamCardProps) => {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -140,6 +143,20 @@ export const ExamCard = ({ exam, history, index, onDelete }: ExamCardProps) => {
             <div className={cn('px-3 py-1.5 rounded-full text-xs font-medium', config.bg, config.text)}>
               {config.label}
             </div>
+
+            {examId && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/exam/${examId}`);
+                }}
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            )}
 
             <AlertDialog>
               <AlertDialogTrigger asChild>

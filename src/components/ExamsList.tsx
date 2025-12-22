@@ -73,6 +73,7 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
             history={getHistory(exam.name)} 
             index={index}
             onDelete={onExamDeleted}
+            examId={exam.examId}
           />
         ))}
       </div>

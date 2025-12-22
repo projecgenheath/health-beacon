@@ -2,6 +2,7 @@ export type ExamStatus = 'healthy' | 'warning' | 'danger';
 
 export interface ExamResult {
   id: string;
+  examId?: string;
   name: string;
   value: number;
   unit: string;

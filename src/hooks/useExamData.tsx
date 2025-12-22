@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale';
 
 interface ExamResultRow {
   id: string;
+  exam_id: string;
   name: string;
   value: number;
   unit: string;
@@ -83,6 +84,7 @@ export const useExamData = () => {
       // Convert to ExamResult format (latest exams only)
       const latestExams: ExamResult[] = Array.from(latestExamsMap.values()).map((row) => ({
         id: row.id,
+        examId: row.exam_id,
         name: row.name,
         value: Number(row.value),
         unit: row.unit,
