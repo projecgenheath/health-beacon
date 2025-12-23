@@ -25,6 +25,7 @@ interface ProfileData {
   sex: string | null;
   avatar_url: string | null;
   email_notifications: boolean;
+  digest_frequency: 'none' | 'weekly' | 'monthly';
 }
 
 const Profile = () => {
@@ -40,6 +41,7 @@ const Profile = () => {
     sex: '',
     avatar_url: null,
     email_notifications: true,
+    digest_frequency: 'none',
   });
 
   useEffect(() => {
@@ -58,7 +60,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, birth_date, sex, avatar_url, email_notifications')
+        .select('full_name, birth_date, sex, avatar_url, email_notifications, digest_frequency')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -71,6 +73,7 @@ const Profile = () => {
           sex: data.sex || '',
           avatar_url: data.avatar_url || null,
           email_notifications: data.email_notifications ?? true,
+          digest_frequency: (data.digest_frequency as 'none' | 'weekly' | 'monthly') || 'none',
         });
       }
     } catch (error) {
@@ -153,6 +156,7 @@ const Profile = () => {
           birth_date: profile.birth_date || null,
           sex: profile.sex || null,
           email_notifications: profile.email_notifications,
+          digest_frequency: profile.digest_frequency,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'
@@ -166,6 +170,32 @@ const Profile = () => {
       toast.error('Erro ao atualizar perfil');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDigestChange = async (value: 'none' | 'weekly' | 'monthly') => {
+    setProfile((prev) => ({ ...prev, digest_frequency: value }));
+    
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          digest_frequency: value,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      const digestText = value === 'none' ? 'desativado' : value === 'weekly' ? 'semanal' : 'mensal';
+      toast.success(`Resumo ${digestText} configurado`);
+    } catch (error) {
+      console.error('Error updating digest:', error);
+      toast.error('Erro ao atualizar preferências');
     }
   };
 
@@ -376,11 +406,40 @@ const Profile = () => {
               />
             </div>
             <Separator />
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label htmlFor="digest-frequency" className="text-base">
+                  Resumo por email
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Receba um resumo periódico de todos os seus exames
+                </p>
+              </div>
+              <Select
+                value={profile.digest_frequency}
+                onValueChange={handleDigestChange}
+                disabled={!profile.email_notifications}
+              >
+                <SelectTrigger className="h-12 rounded-xl">
+                  <SelectValue placeholder="Selecione a frequência" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Desativado</SelectItem>
+                  <SelectItem value="weekly">Semanal</SelectItem>
+                  <SelectItem value="monthly">Mensal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Separator />
             <div className="rounded-lg bg-muted/50 p-3">
               <p className="text-xs text-muted-foreground">
-                {profile.email_notifications
-                  ? '✅ Você receberá notificações por email quando novos exames com valores de atenção ou alterados forem processados.'
-                  : '❌ Você não receberá notificações por email sobre seus exames.'}
+                {!profile.email_notifications
+                  ? '❌ Ative as notificações para receber emails sobre seus exames.'
+                  : profile.digest_frequency === 'none'
+                  ? '📧 Você receberá apenas alertas de valores alterados.'
+                  : profile.digest_frequency === 'weekly'
+                  ? '📊 Você receberá um resumo semanal + alertas de valores alterados.'
+                  : '📊 Você receberá um resumo mensal + alertas de valores alterados.'}
               </p>
             </div>
           </CardContent>

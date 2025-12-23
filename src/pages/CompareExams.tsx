@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight, Download, BarChart3, List } from 'lucide-react';
+import { Activity, ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight, Download, BarChart3, List, Filter } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -60,6 +61,7 @@ const CompareExams = () => {
   const [allResults, setAllResults] = useState<ExamResultRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
+  const [selectedExams, setSelectedExams] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -158,7 +160,12 @@ const CompareExams = () => {
     const examNames = new Set(allResults.map(r => r.name));
     const dateMap = new Map<string, HistoryDataPoint>();
 
-    allResults.forEach(result => {
+    // Filter results based on selected exams
+    const filteredResults = selectedExams.size > 0
+      ? allResults.filter(r => selectedExams.has(r.name))
+      : allResults;
+
+    filteredResults.forEach(result => {
       if (!dateMap.has(result.exam_date)) {
         dateMap.set(result.exam_date, {
           date: result.exam_date,
@@ -168,10 +175,36 @@ const CompareExams = () => {
       dateMap.get(result.exam_date)![result.name] = result.value;
     });
 
+    const filteredNames = selectedExams.size > 0 
+      ? Array.from(selectedExams)
+      : Array.from(examNames);
+
     return {
       data: Array.from(dateMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
       examNames: Array.from(examNames),
+      filteredNames,
     };
+  };
+
+  const toggleExamSelection = (examName: string) => {
+    setSelectedExams(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(examName)) {
+        newSet.delete(examName);
+      } else {
+        newSet.add(examName);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllExams = () => {
+    const { examNames } = getChartData();
+    setSelectedExams(new Set(examNames));
+  };
+
+  const clearExamSelection = () => {
+    setSelectedExams(new Set());
   };
 
   const getStatusConfig = (status: ExamStatus) => ({
@@ -260,8 +293,8 @@ const CompareExams = () => {
   if (!user) return null;
 
   const comparisonData = getComparisonData();
-  const { data: chartData, examNames } = getChartData();
-  const colors = ['hsl(var(--primary))', 'hsl(var(--status-healthy))', 'hsl(var(--status-warning))', 'hsl(var(--status-danger))', '#8884d8', '#82ca9d', '#ffc658'];
+  const { data: chartData, examNames, filteredNames } = getChartData();
+  const colors = ['hsl(var(--primary))', 'hsl(var(--status-healthy))', 'hsl(var(--status-warning))', 'hsl(var(--status-danger))', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#7c7cff', '#7cffb2'];
 
   return (
     <div className="min-h-screen bg-background">
@@ -409,58 +442,122 @@ const CompareExams = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="chart" className="mt-4">
+          <TabsContent value="chart" className="mt-4 space-y-4">
             {chartData.length > 0 && examNames.length > 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-sm font-medium">Evolução dos Exames ao Longo do Tempo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                        <XAxis
-                          dataKey="dateFormatted"
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                        />
-                        <YAxis
-                          tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                          axisLine={false}
-                          tickLine={false}
-                          width={50}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
-                            borderRadius: '8px',
-                          }}
-                        />
-                        <Legend />
-                        {examNames.slice(0, 7).map((name, index) => (
-                          <Line
-                            key={name}
-                            type="monotone"
-                            dataKey={name}
-                            stroke={colors[index % colors.length]}
-                            strokeWidth={2}
-                            dot={{ r: 4, strokeWidth: 2 }}
-                            activeDot={{ r: 6 }}
+              <>
+                {/* Exam Filter */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtrar Exames
+                      </CardTitle>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={selectAllExams}
+                          disabled={selectedExams.size === examNames.length}
+                        >
+                          Selecionar todos
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={clearExamSelection}
+                          disabled={selectedExams.size === 0}
+                        >
+                          Limpar
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {examNames.map((name, index) => (
+                        <label
+                          key={name}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors",
+                            selectedExams.has(name)
+                              ? "bg-primary/10 border-primary"
+                              : "bg-muted/50 border-border hover:bg-muted"
+                          )}
+                        >
+                          <Checkbox
+                            checked={selectedExams.has(name)}
+                            onCheckedChange={() => toggleExamSelection(name)}
                           />
-                        ))}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  {examNames.length > 7 && (
-                    <p className="text-xs text-muted-foreground text-center mt-2">
-                      Mostrando os primeiros 7 exames. Total: {examNames.length}
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: colors[index % colors.length] }}
+                          >
+                            {name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      {selectedExams.size === 0
+                        ? `Mostrando todos os ${Math.min(examNames.length, 10)} exames`
+                        : `${selectedExams.size} exame(s) selecionado(s)`}
                     </p>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+
+                {/* Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Evolução dos Exames ao Longo do Tempo</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                          <XAxis
+                            dataKey="dateFormatted"
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                            axisLine={false}
+                            tickLine={false}
+                            width={50}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--card))',
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                            }}
+                          />
+                          <Legend />
+                          {filteredNames.slice(0, 10).map((name, index) => (
+                            <Line
+                              key={name}
+                              type="monotone"
+                              dataKey={name}
+                              stroke={colors[examNames.indexOf(name) % colors.length]}
+                              strokeWidth={2}
+                              dot={{ r: 4, strokeWidth: 2 }}
+                              activeDot={{ r: 6 }}
+                            />
+                          ))}
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    {filteredNames.length > 10 && (
+                      <p className="text-xs text-muted-foreground text-center mt-2">
+                        Mostrando os primeiros 10 exames selecionados. Total selecionado: {filteredNames.length}
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
             ) : (
               <Card>
                 <CardContent className="py-12 text-center">

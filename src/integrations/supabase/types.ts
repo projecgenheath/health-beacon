@@ -108,6 +108,7 @@ export type Database = {
           avatar_url: string | null
           birth_date: string | null
           created_at: string
+          digest_frequency: string | null
           email_notifications: boolean | null
           full_name: string | null
           id: string
@@ -119,6 +120,7 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           created_at?: string
+          digest_frequency?: string | null
           email_notifications?: boolean | null
           full_name?: string | null
           id?: string
@@ -130,6 +132,7 @@ export type Database = {
           avatar_url?: string | null
           birth_date?: string | null
           created_at?: string
+          digest_frequency?: string | null
           email_notifications?: boolean | null
           full_name?: string | null
           id?: string
