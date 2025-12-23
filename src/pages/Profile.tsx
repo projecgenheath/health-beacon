@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload, Bell } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -14,6 +15,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 interface ProfileData {
@@ -21,6 +24,7 @@ interface ProfileData {
   birth_date: string | null;
   sex: string | null;
   avatar_url: string | null;
+  email_notifications: boolean;
 }
 
 const Profile = () => {
@@ -35,6 +39,7 @@ const Profile = () => {
     birth_date: '',
     sex: '',
     avatar_url: null,
+    email_notifications: true,
   });
 
   useEffect(() => {
@@ -53,7 +58,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, birth_date, sex, avatar_url')
+        .select('full_name, birth_date, sex, avatar_url, email_notifications')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -65,6 +70,7 @@ const Profile = () => {
           birth_date: data.birth_date || '',
           sex: data.sex || '',
           avatar_url: data.avatar_url || null,
+          email_notifications: data.email_notifications ?? true,
         });
       }
     } catch (error) {
@@ -85,13 +91,11 @@ const Profile = () => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione uma imagem');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('A imagem deve ter no máximo 5MB');
       return;
@@ -100,12 +104,10 @@ const Profile = () => {
     setUploadingAvatar(true);
 
     try {
-      // Delete old avatar if exists
       if (profile.avatar_url) {
         await supabase.storage.from('avatars').remove([profile.avatar_url]);
       }
 
-      // Upload new avatar
       const fileExt = file.name.split('.').pop();
       const filePath = `${user.id}/avatar.${fileExt}`;
 
@@ -115,7 +117,6 @@ const Profile = () => {
 
       if (uploadError) throw uploadError;
 
-      // Update profile with new avatar URL
       const { error: updateError } = await supabase
         .from('profiles')
         .upsert({
@@ -151,6 +152,7 @@ const Profile = () => {
           full_name: profile.full_name || null,
           birth_date: profile.birth_date || null,
           sex: profile.sex || null,
+          email_notifications: profile.email_notifications,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'
@@ -164,6 +166,32 @@ const Profile = () => {
       toast.error('Erro ao atualizar perfil');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleNotificationToggle = async (checked: boolean) => {
+    setProfile((prev) => ({ ...prev, email_notifications: checked }));
+    
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
+          email_notifications: checked,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      toast.success(checked ? 'Notificações ativadas' : 'Notificações desativadas');
+    } catch (error) {
+      console.error('Error updating notifications:', error);
+      toast.error('Erro ao atualizar preferências');
+      setProfile((prev) => ({ ...prev, email_notifications: !checked }));
     }
   };
 
@@ -194,7 +222,7 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="container py-6 max-w-lg">
+      <main className="container py-6 max-w-lg space-y-6">
         <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up">
           {/* Avatar section */}
           <div className="flex flex-col items-center mb-6">
@@ -319,6 +347,44 @@ const Profile = () => {
             </Button>
           </form>
         </div>
+
+        {/* Notification Preferences Card */}
+        <Card className="animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Bell className="h-5 w-5 text-primary" />
+              Notificações
+            </CardTitle>
+            <CardDescription>
+              Gerencie suas preferências de notificação por email
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="email-alerts" className="text-base">
+                  Alertas de exames
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Receba emails quando seus resultados apresentarem valores alterados ou que requerem atenção
+                </p>
+              </div>
+              <Switch
+                id="email-alerts"
+                checked={profile.email_notifications}
+                onCheckedChange={handleNotificationToggle}
+              />
+            </div>
+            <Separator />
+            <div className="rounded-lg bg-muted/50 p-3">
+              <p className="text-xs text-muted-foreground">
+                {profile.email_notifications
+                  ? '✅ Você receberá notificações por email quando novos exames com valores de atenção ou alterados forem processados.'
+                  : '❌ Você não receberá notificações por email sobre seus exames.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );

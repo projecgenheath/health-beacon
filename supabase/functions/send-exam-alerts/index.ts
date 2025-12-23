@@ -61,6 +61,26 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check user notification preferences
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const { data: profileData } = await supabaseAdmin
+      .from('profiles')
+      .select('email_notifications')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (profileData && profileData.email_notifications === false) {
+      console.log(`User ${user.id} has disabled email notifications, skipping`);
+      return new Response(
+        JSON.stringify({ message: 'Email notifications disabled by user' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const userEmail = user.email;
     if (!userEmail) {
       return new Response(
