@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Activity, ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight, Download, BarChart3, List, Filter } from 'lucide-react';
+import { Activity, ArrowLeft, TrendingUp, TrendingDown, Minus, ArrowRight, Download, BarChart3, List, Filter, Table, Image } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -26,6 +26,7 @@ import {
   Legend,
 } from 'recharts';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface ExamDate {
   date: string;
@@ -60,8 +61,9 @@ const CompareExams = () => {
   const [results2, setResults2] = useState<ExamResultRow[]>([]);
   const [allResults, setAllResults] = useState<ExamResultRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'chart'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'chart' | 'table'>('list');
   const [selectedExams, setSelectedExams] = useState<Set<string>>(new Set());
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -186,6 +188,35 @@ const CompareExams = () => {
     };
   };
 
+  // Get multi-date comparison table data
+  const getMultiDateTableData = () => {
+    const examNames = [...new Set(allResults.map(r => r.name))];
+    const dates = [...new Set(allResults.map(r => r.exam_date))].sort();
+    
+    // Filter exams if any selected
+    const filteredExamNames = selectedExams.size > 0 
+      ? examNames.filter(name => selectedExams.has(name))
+      : examNames;
+
+    const tableData = filteredExamNames.map(examName => {
+      const row: { name: string; unit: string; values: { date: string; value: number | null; status: string | null }[] } = {
+        name: examName,
+        unit: allResults.find(r => r.name === examName)?.unit || '',
+        values: dates.map(date => {
+          const result = allResults.find(r => r.name === examName && r.exam_date === date);
+          return {
+            date,
+            value: result?.value ?? null,
+            status: result?.status ?? null,
+          };
+        }),
+      };
+      return row;
+    });
+
+    return { tableData, dates };
+  };
+
   const toggleExamSelection = (examName: string) => {
     setSelectedExams(prev => {
       const newSet = new Set(prev);
@@ -220,7 +251,7 @@ const CompareExams = () => {
     return diff > 0 ? 'up' : 'down';
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async (includeChart = false) => {
     const doc = new jsPDF();
     const comparisonData = getComparisonData();
     
@@ -268,16 +299,77 @@ const CompareExams = () => {
       y += 8;
     });
     
+    // Add chart image if requested
+    if (includeChart && chartRef.current) {
+      try {
+        const canvas = await html2canvas(chartRef.current, {
+          backgroundColor: '#ffffff',
+          scale: 2,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.setTextColor(14, 165, 233);
+        doc.text('Gráfico de Evolução', 20, 20);
+        
+        const imgWidth = 170;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        doc.addImage(imgData, 'PNG', 20, 30, imgWidth, Math.min(imgHeight, 200));
+      } catch (error) {
+        console.error('Error adding chart to PDF:', error);
+      }
+    }
+    
     // Footer
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Gerado em ${format(new Date(), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}`, 20, 285);
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.text(`Gerado em ${format(new Date(), "d 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}`, 20, 285);
+    }
     
     doc.save(`comparacao-exames-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     toast({
       title: 'PDF exportado',
       description: 'O arquivo foi baixado com sucesso.',
     });
+  };
+
+  const exportChartAsImage = async () => {
+    if (!chartRef.current) {
+      toast({
+        title: 'Erro',
+        description: 'Nenhum gráfico disponível para exportar.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const canvas = await html2canvas(chartRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `grafico-exames-${format(new Date(), 'yyyy-MM-dd')}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast({
+        title: 'Imagem exportada',
+        description: 'O gráfico foi salvo como imagem.',
+      });
+    } catch (error) {
+      console.error('Error exporting chart:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível exportar o gráfico.',
+        variant: 'destructive',
+      });
+    }
   };
 
   if (authLoading || loading) {
@@ -306,13 +398,19 @@ const CompareExams = () => {
               <ArrowLeft className="h-4 w-4 mr-2" />
               Voltar
             </Button>
-            <Button onClick={exportToPDF} variant="outline" disabled={comparisonData.length === 0}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar PDF
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => exportToPDF(false)} variant="outline" disabled={comparisonData.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </Button>
+              <Button onClick={() => exportToPDF(true)} variant="outline" disabled={allResults.length === 0}>
+                <Image className="h-4 w-4 mr-2" />
+                PDF + Gráfico
+              </Button>
+            </div>
           </div>
           <h1 className="text-2xl font-bold text-foreground">Comparar Exames</h1>
-          <p className="text-muted-foreground">Compare seus resultados entre duas datas diferentes</p>
+          <p className="text-muted-foreground">Compare seus resultados entre datas ou veja a evolução ao longo do tempo</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 mb-6">
@@ -357,11 +455,15 @@ const CompareExams = () => {
           </Card>
         </div>
 
-        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'chart')} className="mb-6">
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'chart' | 'table')} className="mb-6">
           <TabsList>
             <TabsTrigger value="list" className="flex items-center gap-2">
               <List className="h-4 w-4" />
               Lista
+            </TabsTrigger>
+            <TabsTrigger value="table" className="flex items-center gap-2">
+              <Table className="h-4 w-4" />
+              Tabela
             </TabsTrigger>
             <TabsTrigger value="chart" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -442,10 +544,11 @@ const CompareExams = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="chart" className="mt-4 space-y-4">
-            {chartData.length > 0 && examNames.length > 0 ? (
+          {/* Multi-date Table View */}
+          <TabsContent value="table" className="mt-4 space-y-4">
+            {allResults.length > 0 ? (
               <>
-                {/* Exam Filter */}
+                {/* Exam Filter for Table */}
                 <Card>
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -498,6 +601,135 @@ const CompareExams = () => {
                         </label>
                       ))}
                     </div>
+                  </CardContent>
+                </Card>
+
+                {/* Multi-date Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm font-medium">Comparação em Todas as Datas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border">
+                            <th className="text-left p-3 font-medium text-muted-foreground sticky left-0 bg-card">Exame</th>
+                            <th className="text-left p-3 font-medium text-muted-foreground">Unidade</th>
+                            {getMultiDateTableData().dates.map(date => (
+                              <th key={date} className="text-center p-3 font-medium text-muted-foreground whitespace-nowrap">
+                                {format(parseISO(date), 'dd/MM/yy', { locale: ptBR })}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {getMultiDateTableData().tableData.map((row, rowIndex) => (
+                            <tr key={row.name} className={cn("border-b border-border/50", rowIndex % 2 === 0 ? "bg-muted/20" : "")}>
+                              <td className="p-3 font-medium sticky left-0 bg-inherit">{row.name}</td>
+                              <td className="p-3 text-muted-foreground">{row.unit}</td>
+                              {row.values.map((val, colIndex) => {
+                                const statusConfig = val.status ? getStatusConfig(val.status as ExamStatus) : null;
+                                return (
+                                  <td key={colIndex} className="text-center p-3">
+                                    {val.value !== null ? (
+                                      <span className={cn("px-2 py-1 rounded", statusConfig?.bg, statusConfig?.text)}>
+                                        {val.value}
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {getMultiDateTableData().tableData.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        Nenhum exame selecionado
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">
+                    Nenhum dado disponível para exibir na tabela
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="chart" className="mt-4 space-y-4">
+            {chartData.length > 0 && examNames.length > 0 ? (
+              <>
+                {/* Exam Filter */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtrar Exames
+                      </CardTitle>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={selectAllExams}
+                          disabled={selectedExams.size === examNames.length}
+                        >
+                          Selecionar todos
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={clearExamSelection}
+                          disabled={selectedExams.size === 0}
+                        >
+                          Limpar
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={exportChartAsImage}
+                        >
+                          <Image className="h-4 w-4 mr-1" />
+                          Exportar Imagem
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {examNames.map((name, index) => (
+                        <label
+                          key={name}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors",
+                            selectedExams.has(name)
+                              ? "bg-primary/10 border-primary"
+                              : "bg-muted/50 border-border hover:bg-muted"
+                          )}
+                        >
+                          <Checkbox
+                            checked={selectedExams.has(name)}
+                            onCheckedChange={() => toggleExamSelection(name)}
+                          />
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: colors[index % colors.length] }}
+                          >
+                            {name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-3">
                       {selectedExams.size === 0
                         ? `Mostrando todos os ${Math.min(examNames.length, 10)} exames`
@@ -512,7 +744,7 @@ const CompareExams = () => {
                     <CardTitle className="text-sm font-medium">Evolução dos Exames ao Longo do Tempo</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-80">
+                    <div ref={chartRef} className="h-80 bg-background p-4 rounded">
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
