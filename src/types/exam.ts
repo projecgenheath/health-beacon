@@ -11,6 +11,8 @@ export interface ExamResult {
   status: ExamStatus;
   date: string;
   category: string;
+  fileUrl?: string | null;
+  fileName?: string | null;
 }
 
 export interface ExamHistory {
