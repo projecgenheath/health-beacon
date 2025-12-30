@@ -1,63 +1,32 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 import { useExamData } from '@/hooks/useExamData';
-import { Header } from '@/components/Header';
 import { HealthSummaryCard } from '@/components/HealthSummaryCard';
 import { UploadSection } from '@/components/UploadSection';
 import { UploadHistory } from '@/components/UploadHistory';
 import { AlertsSection } from '@/components/AlertsSection';
 import { ExamsList } from '@/components/ExamsList';
-import { Activity } from 'lucide-react';
+import { DashboardSkeleton } from '@/components/skeletons';
 
 const Index = () => {
-  const { user, loading: authLoading } = useAuth();
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
-  if (authLoading || dataLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center animate-pulse-slow shadow-glow-primary">
-            <Activity className="h-8 w-8 text-primary-foreground" />
-          </div>
-          <p className="text-muted-foreground animate-fade-in">Carregando seus exames...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
+  if (dataLoading) {
+    return <DashboardSkeleton />;
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="container py-6 pb-20">
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Left column - Summary and Upload */}
-          <div className="space-y-6 lg:col-span-1">
-            <HealthSummaryCard summary={summary} />
-            <UploadSection onUploadComplete={refetch} />
-            <UploadHistory onReprocess={refetch} />
-            <AlertsSection exams={exams} />
-          </div>
+    <div className="grid gap-6 lg:grid-cols-3">
+      {/* Left column - Summary and Upload */}
+      <div className="space-y-6 lg:col-span-1">
+        <HealthSummaryCard summary={summary} />
+        <UploadSection onUploadComplete={refetch} />
+        <UploadHistory onReprocess={refetch} />
+        <AlertsSection exams={exams} />
+      </div>
 
-          {/* Right column - Exams list */}
-          <div className="lg:col-span-2">
-            <ExamsList exams={exams} histories={histories} onExamDeleted={refetch} />
-          </div>
-        </div>
-      </main>
+      {/* Right column - Exams list */}
+      <div className="lg:col-span-2">
+        <ExamsList exams={exams} histories={histories} onExamDeleted={refetch} />
+      </div>
     </div>
   );
 };

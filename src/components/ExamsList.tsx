@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { ExamResult, ExamHistory } from '@/types/exam';
 import { ExamCard } from './ExamCard';
-import { Filter } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { SearchBar } from './SearchBar';
+import { FilterPanel } from './FilterPanel';
+import { ActiveFilters } from './ActiveFilters';
+import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
+import { FileQuestion } from 'lucide-react';
 
 interface ExamsListProps {
   exams: ExamResult[];
@@ -10,79 +13,137 @@ interface ExamsListProps {
   onExamDeleted?: () => void;
 }
 
-type FilterType = 'all' | 'danger' | 'warning' | 'healthy';
-
 export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) => {
-  const [filter, setFilter] = useState<FilterType>('all');
+  // Extrair categorias e labs únicos dos exames
+  const availableCategories = useMemo(() => {
+    const categories = new Set(exams.map(e => e.category).filter(Boolean));
+    return Array.from(categories) as string[];
+  }, [exams]);
 
-  const filteredExams = exams.filter((exam) => {
-    if (filter === 'all') return true;
-    return exam.status === filter;
+  const availableLabs = useMemo(() => {
+    const labs = new Set(exams.map(e => e.labName).filter(Boolean));
+    return Array.from(labs) as string[];
+  }, [exams]);
+
+  // Usar o hook de busca e filtros
+  const {
+    filters,
+    filteredData: filteredExams,
+    stats,
+    setSearchTerm,
+    setDateRange,
+    toggleStatus,
+    toggleCategory,
+    toggleLab,
+    setSorting,
+    resetFilters,
+  } = useSearchAndFilter(exams, {
+    searchFields: ['name', 'category'],
+    dateField: 'date',
+    statusField: 'status',
+    categoryField: 'category',
+    labField: 'labName',
   });
-
-  const filterButtons: { type: FilterType; label: string; count: number }[] = [
-    { type: 'all', label: 'Todos', count: exams.length },
-    { type: 'danger', label: 'Alterados', count: exams.filter((e) => e.status === 'danger').length },
-    { type: 'warning', label: 'Atenção', count: exams.filter((e) => e.status === 'warning').length },
-    { type: 'healthy', label: 'Normal', count: exams.filter((e) => e.status === 'healthy').length },
-  ];
 
   const getHistory = (examName: string) => {
     return histories.find((h) => h.examName === examName);
   };
 
+  const activeFiltersCount =
+    filters.statuses.length +
+    filters.categories.length +
+    filters.labs.length +
+    (filters.dateRange.start ? 1 : 0) +
+    (filters.dateRange.end ? 1 : 0);
+
   return (
-    <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
-      <div className="flex items-center justify-between mb-4">
+    <div className="animate-slide-up space-y-4" style={{ animationDelay: '200ms' }}>
+      {/* Header with title */}
+      <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">Seus Exames</h2>
-        <Filter className="h-5 w-5 text-muted-foreground" />
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-1 px-1">
-        {filterButtons.map((btn) => (
-          <button
-            key={btn.type}
-            onClick={() => setFilter(btn.type)}
-            className={cn(
-              'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200',
-              filter === btn.type
-                ? 'gradient-primary text-primary-foreground shadow-md'
-                : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-            )}
-          >
-            {btn.label}
-            <span
-              className={cn(
-                'px-1.5 py-0.5 rounded-full text-xs',
-                filter === btn.type ? 'bg-primary-foreground/20' : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {btn.count}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* Exams list */}
-      <div className="space-y-3">
-        {filteredExams.map((exam, index) => (
-          <ExamCard 
-            key={exam.id} 
-            exam={exam} 
-            history={getHistory(exam.name)} 
-            index={index}
-            onDelete={onExamDeleted}
-            examId={exam.examId}
-            fileUrl={exam.fileUrl}
-            fileName={exam.fileName}
+      {/* Search and Filter Bar */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex-1">
+          <SearchBar
+            value={filters.searchTerm}
+            onChange={setSearchTerm}
+            placeholder="Buscar exames por nome, categoria..."
           />
-        ))}
+        </div>
+        <FilterPanel
+          filters={filters}
+          onStatusToggle={toggleStatus}
+          onCategoryToggle={toggleCategory}
+          onLabToggle={toggleLab}
+          onDateRangeChange={setDateRange}
+          onSortChange={setSorting}
+          onReset={resetFilters}
+          availableCategories={availableCategories}
+          availableLabs={availableLabs}
+          activeFiltersCount={activeFiltersCount}
+        />
       </div>
 
-      {filteredExams.length === 0 && (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Nenhum exame encontrado com esse filtro</p>
+      {/* Active Filters */}
+      <ActiveFilters
+        filters={filters}
+        onRemoveStatus={toggleStatus}
+        onRemoveCategory={toggleCategory}
+        onRemoveLab={toggleLab}
+        onClearDateRange={() => setDateRange(null, null)}
+        onClearAll={resetFilters}
+        totalResults={stats.total}
+        filteredResults={stats.filtered}
+      />
+
+      {/* Results Count - Only show if searching */}
+      {filters.searchTerm && !stats.hasActiveFilters && (
+        <p className="text-sm text-muted-foreground">
+          {stats.filtered === 0
+            ? 'Nenhum resultado encontrado'
+            : `${stats.filtered} resultado${stats.filtered !== 1 ? 's' : ''} encontrado${stats.filtered !== 1 ? 's' : ''}`
+          }
+        </p>
+      )}
+
+      {/* Exams Grid/List */}
+      {filteredExams.length > 0 ? (
+        <div className="space-y-3">
+          {filteredExams.map((exam, index) => (
+            <ExamCard
+              key={exam.id}
+              exam={exam}
+              history={getHistory(exam.name)}
+              index={index}
+              onDelete={onExamDeleted}
+              examId={exam.examId}
+              fileUrl={exam.fileUrl}
+              fileName={exam.fileName}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-16">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+            <FileQuestion className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Nenhum exame encontrado</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            {stats.hasActiveFilters || filters.searchTerm
+              ? 'Tente ajustar os filtros ou termo de busca'
+              : 'Faça upload do seu primeiro exame para começar'
+            }
+          </p>
+          {stats.hasActiveFilters && (
+            <button
+              onClick={resetFilters}
+              className="text-sm text-primary hover:underline"
+            >
+              Limpar todos os filtros
+            </button>
+          )}
         </div>
       )}
     </div>
