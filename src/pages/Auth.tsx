@@ -99,31 +99,40 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-medical-light/20 to-background">
-        <div className="animate-pulse">
-          <Activity className="h-12 w-12 text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center animate-pulse-slow shadow-glow-primary">
+            <Activity className="h-8 w-8 text-primary-foreground" />
+          </div>
+          <p className="text-muted-foreground animate-fade-in">Carregando...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-medical-light/20 to-background p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-medical shadow-glow mb-4">
-            <Activity className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center p-4">
+      {/* Background decorations */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-status-healthy/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="relative w-full max-w-md">
+        <div className="text-center mb-8 animate-slide-up">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4">
+            <Activity className="h-10 w-10 text-primary-foreground" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground">MeuExame</h1>
+          <h1 className="text-4xl font-bold text-foreground">MeuExame</h1>
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg backdrop-blur-sm bg-card/80">
+        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in">
           <Tabs defaultValue="login" className="w-full">
             <CardHeader className="pb-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Entrar</TabsTrigger>
-                <TabsTrigger value="register">Cadastrar</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+                <TabsTrigger value="login" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Entrar</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Cadastrar</TabsTrigger>
               </TabsList>
             </CardHeader>
             
@@ -164,7 +173,7 @@ const Auth = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-medical hover:opacity-90 transition-opacity"
+                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Entrando...' : 'Entrar'}
@@ -239,7 +248,7 @@ const Auth = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full bg-gradient-medical hover:opacity-90 transition-opacity"
+                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Criando conta...' : 'Criar conta'}

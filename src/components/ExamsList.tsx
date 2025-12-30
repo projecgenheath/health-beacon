@@ -74,6 +74,8 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
             index={index}
             onDelete={onExamDeleted}
             examId={exam.examId}
+            fileUrl={exam.fileUrl}
+            fileName={exam.fileName}
           />
         ))}
       </div>

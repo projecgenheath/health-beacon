@@ -44,7 +44,13 @@ export const useExamData = () => {
       // Fetch all exam results for the user, ordered by date and name
       const { data, error } = await supabase
         .from('exam_results')
-        .select('*')
+        .select(`
+          *,
+          exams:exam_id (
+            file_url,
+            file_name
+          )
+        `)
         .eq('user_id', user.id)
         .order('exam_date', { ascending: false });
 
@@ -65,10 +71,10 @@ export const useExamData = () => {
       }
 
       // Get the most recent exam for each unique exam name
-      const latestExamsMap = new Map<string, ExamResultRow>();
+      const latestExamsMap = new Map<string, ExamResultRow & { exams?: { file_url: string | null; file_name: string } | null }>();
       const examsByName = new Map<string, ExamResultRow[]>();
 
-      (data as ExamResultRow[]).forEach((row) => {
+      (data as (ExamResultRow & { exams?: { file_url: string | null; file_name: string } | null })[]).forEach((row) => {
         // Build history by exam name
         if (!examsByName.has(row.name)) {
           examsByName.set(row.name, []);
@@ -93,6 +99,8 @@ export const useExamData = () => {
         status: row.status as ExamStatus,
         date: row.exam_date,
         category: row.category ?? 'Geral',
+        fileUrl: row.exams?.file_url ?? null,
+        fileName: row.exams?.file_name ?? null,
       }));
 
       // Build exam histories

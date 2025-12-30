@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ExamResult, ExamHistory } from '@/types/exam';
-import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2, FileText } from 'lucide-react';
+import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2, FileText, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ExamChart } from './ExamChart';
+import { ExamViewerModal } from './ExamViewerModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -25,12 +26,15 @@ interface ExamCardProps {
   index: number;
   onDelete?: () => void;
   examId?: string;
+  fileUrl?: string | null;
+  fileName?: string;
 }
 
-export const ExamCard = ({ exam, history, index, onDelete, examId }: ExamCardProps) => {
+export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, fileName }: ExamCardProps) => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
 
   const statusConfig = {
     healthy: {
@@ -144,6 +148,20 @@ export const ExamCard = ({ exam, history, index, onDelete, examId }: ExamCardPro
               {config.label}
             </div>
 
+            {fileUrl && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowViewer(true);
+                }}
+              >
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
+
             {examId && (
               <Button
                 variant="ghost"
@@ -217,6 +235,13 @@ export const ExamCard = ({ exam, history, index, onDelete, examId }: ExamCardPro
           )}
         </div>
       </div>
+
+      <ExamViewerModal
+        isOpen={showViewer}
+        onClose={() => setShowViewer(false)}
+        fileUrl={fileUrl || null}
+        fileName={fileName || exam.name}
+      />
     </div>
   );
 };

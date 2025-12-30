@@ -5,6 +5,7 @@ import { useExamData } from '@/hooks/useExamData';
 import { Header } from '@/components/Header';
 import { HealthSummaryCard } from '@/components/HealthSummaryCard';
 import { UploadSection } from '@/components/UploadSection';
+import { UploadHistory } from '@/components/UploadHistory';
 import { AlertsSection } from '@/components/AlertsSection';
 import { ExamsList } from '@/components/ExamsList';
 import { Activity } from 'lucide-react';
@@ -22,9 +23,12 @@ const Index = () => {
 
   if (authLoading || dataLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-medical-light/20 to-background">
-        <div className="animate-pulse">
-          <Activity className="h-12 w-12 text-primary" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center animate-pulse-slow shadow-glow-primary">
+            <Activity className="h-8 w-8 text-primary-foreground" />
+          </div>
+          <p className="text-muted-foreground animate-fade-in">Carregando seus exames...</p>
         </div>
       </div>
     );
@@ -44,6 +48,7 @@ const Index = () => {
           <div className="space-y-6 lg:col-span-1">
             <HealthSummaryCard summary={summary} />
             <UploadSection onUploadComplete={refetch} />
+            <UploadHistory onReprocess={refetch} />
             <AlertsSection exams={exams} />
           </div>
 
