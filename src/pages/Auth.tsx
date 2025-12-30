@@ -17,11 +17,11 @@ const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
-  
+
   // Register form
   const [registerName, setRegisterName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
@@ -36,7 +36,7 @@ const Auth = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       emailSchema.parse(loginEmail);
       passwordSchema.parse(loginPassword);
@@ -50,7 +50,7 @@ const Auth = () => {
     setIsSubmitting(true);
     const { error } = await signIn(loginEmail, loginPassword);
     setIsSubmitting(false);
-    
+
     if (error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
@@ -65,7 +65,7 @@ const Auth = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       emailSchema.parse(registerEmail);
       passwordSchema.parse(registerPassword);
@@ -84,7 +84,7 @@ const Auth = () => {
     setIsSubmitting(true);
     const { error } = await signUp(registerEmail, registerPassword, registerName);
     setIsSubmitting(false);
-    
+
     if (error) {
       if (error.message.includes('already registered')) {
         toast.error('Este email já está cadastrado');
@@ -123,7 +123,7 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4">
             <Activity className="h-10 w-10 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold text-foreground">MeuExame</h1>
+          <h1 className="text-4xl font-bold text-foreground">BioGen</h1>
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
@@ -135,7 +135,7 @@ const Auth = () => {
                 <TabsTrigger value="register" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Cadastrar</TabsTrigger>
               </TabsList>
             </CardHeader>
-            
+
             <CardContent>
               <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -154,7 +154,7 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="login-password">Senha</Label>
                     <div className="relative">
@@ -170,9 +170,9 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
                     disabled={isSubmitting}
                   >
@@ -180,7 +180,7 @@ const Auth = () => {
                   </Button>
                 </form>
               </TabsContent>
-              
+
               <TabsContent value="register" className="mt-0">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-2">
@@ -197,7 +197,7 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="register-email">Email</Label>
                     <div className="relative">
@@ -213,7 +213,7 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="register-password">Senha</Label>
                     <div className="relative">
@@ -229,7 +229,7 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="register-confirm">Confirmar senha</Label>
                     <div className="relative">
@@ -245,9 +245,9 @@ const Auth = () => {
                       />
                     </div>
                   </div>
-                  
-                  <Button 
-                    type="submit" 
+
+                  <Button
+                    type="submit"
                     className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
                     disabled={isSubmitting}
                   >

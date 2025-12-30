@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Eye,
   ChevronDown,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -136,6 +137,46 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     }
   };
 
+  const handleDelete = async (exam: ExamUpload) => {
+    try {
+      // Delete from storage if file_url exists
+      if (exam.file_url) {
+        const { error: storageError } = await supabase.storage
+          .from('exam-files')
+          .remove([exam.file_url]);
+
+        if (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+        }
+      }
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('exams')
+        .delete()
+        .eq('id', exam.id);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setUploads(uploads.filter(u => u.id !== exam.id));
+
+      toast({
+        title: 'Excluído',
+        description: 'O upload foi excluído com sucesso',
+      });
+
+      onReprocess?.();
+    } catch (error) {
+      console.error('Error deleting exam:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Não foi possível excluir o upload',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusIcon = (processed: boolean | null) => {
     if (processed === true) {
       return <CheckCircle className="h-4 w-4 text-status-healthy" />;
@@ -246,13 +287,23 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                       )} />
                       {reprocessingId === upload.id ? 'Processando...' : 'Reprocessar'}
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(upload)}
+                      className="h-8 w-8 text-status-danger hover:text-red-600 hover:bg-red-50"
+                      title="Excluir upload falho"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
                   )}
-                </div>
+              </div>
               </div>
             ))}
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
+        </div>
+      </CollapsibleContent>
+    </Collapsible >
 
       <ExamViewerModal
         isOpen={!!viewingExam}
