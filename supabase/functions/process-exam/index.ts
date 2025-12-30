@@ -207,18 +207,35 @@ Return ONLY valid JSON in this exact format:
 
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
-      const examResults = parsedData.results.map(result => ({
+      // Filter out results with missing required fields and add defaults
+      const validResults = parsedData.results.filter(result => 
+        result.name && result.value !== undefined && result.value !== null
+      );
+
+      const examResults = validResults.map(result => ({
         exam_id: examId,
         user_id: user.id,
-        name: result.name,
-        value: result.value,
-        unit: result.unit,
-        reference_min: result.reference_min,
-        reference_max: result.reference_max,
-        category: result.category || 'Geral',
+        name: result.name.trim(),
+        value: Number(result.value) || 0,
+        unit: result.unit?.trim() || '-',
+        reference_min: result.reference_min ?? null,
+        reference_max: result.reference_max ?? null,
+        category: result.category?.trim() || 'Geral',
         status: result.status || 'healthy',
         exam_date: parsedData.exam_date || new Date().toISOString().split('T')[0]
       }));
+
+      if (examResults.length === 0) {
+        console.log('No valid exam results to save');
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Exam processed but no valid results found',
+            resultsCount: 0
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       const { error: insertError } = await supabaseAdmin
         .from('exam_results')
