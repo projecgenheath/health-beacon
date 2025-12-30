@@ -27,7 +27,7 @@ export const Header = () => {
             <Activity className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">BioGen</h1>
+            <h1 className="text-lg font-bold text-foreground">MeuExame</h1>
             <p className="text-xs text-muted-foreground">Acompanhe sua saúde</p>
           </div>
         </div>
