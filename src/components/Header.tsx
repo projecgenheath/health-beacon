@@ -1,6 +1,7 @@
-import { Activity, User, Bell, LogOut, Settings } from 'lucide-react';
+import { Activity, User, Bell, LogOut, Settings, Sun, Moon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -12,11 +13,18 @@ import {
 
 export const Header = () => {
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   const handleSignOut = async () => {
     await signOut();
     toast.success('Você saiu da sua conta');
+  };
+
+  const toggleTheme = () => {
+    setTheme(isDark ? 'light' : 'dark');
   };
 
   return (
@@ -33,6 +41,16 @@ export const Header = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="relative p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-colors"
+            aria-label="Alternar tema"
+          >
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute top-2.5 left-2.5 h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </button>
+
           <button className="relative p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-colors">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-status-danger text-[10px] font-medium text-primary-foreground flex items-center justify-center">

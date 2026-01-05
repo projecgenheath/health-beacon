@@ -5,6 +5,7 @@ import { UploadHistory } from '@/components/UploadHistory';
 import { AlertsSection } from '@/components/AlertsSection';
 import { ExamsList } from '@/components/ExamsList';
 import { DashboardSkeleton } from '@/components/skeletons';
+import { ExportPDFButton } from '@/components/ExportPDFButton';
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
@@ -24,7 +25,10 @@ const Index = () => {
       </div>
 
       {/* Right column - Exams list */}
-      <div className="lg:col-span-2">
+      <div className="lg:col-span-2 space-y-4">
+        <div className="flex justify-end">
+          <ExportPDFButton exams={exams} summary={summary} />
+        </div>
         <ExamsList exams={exams} histories={histories} onExamDeleted={refetch} />
       </div>
     </div>
