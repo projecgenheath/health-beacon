@@ -20,10 +20,7 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
     return Array.from(categories) as string[];
   }, [exams]);
 
-  const availableLabs = useMemo(() => {
-    const labs = new Set(exams.map(e => e.labName).filter(Boolean));
-    return Array.from(labs) as string[];
-  }, [exams]);
+  const availableLabs: string[] = [];
 
   // Usar o hook de busca e filtros
   const {
@@ -42,7 +39,6 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
     dateField: 'date',
     statusField: 'status',
     categoryField: 'category',
-    labField: 'labName',
   });
 
   const getHistory = (examName: string) => {
