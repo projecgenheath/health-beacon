@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ExamResult, ExamHistory } from '@/types/exam';
 import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2, FileText, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ExamChart } from './ExamChart';
+import { ImprovedExamChart } from './ImprovedExamChart';
 import { ExamViewerModal } from './ExamViewerModal';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -227,7 +227,7 @@ export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, file
       >
         <div className="px-5 pb-4 pt-2 border-t border-border/50">
           {history ? (
-            <ExamChart history={history} />
+            <ImprovedExamChart history={history} showDetails={true} />
           ) : (
             <p className="text-center text-sm text-muted-foreground py-8">
               Sem histórico disponível para este exame
