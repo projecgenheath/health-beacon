@@ -116,23 +116,24 @@ const Auth = () => {
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
         <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-status-healthy/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/10 blur-2xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8 animate-slide-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4 animate-float hover:scale-105 transition-spring">
             <Activity className="h-10 w-10 text-primary-foreground" />
           </div>
           <h1 className="text-4xl font-bold text-foreground">MeuExame</h1>
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in">
+        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift">
           <Tabs defaultValue="login" className="w-full">
             <CardHeader className="pb-4">
               <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
-                <TabsTrigger value="login" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Entrar</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-card data-[state=active]:shadow-sm">Cadastrar</TabsTrigger>
+                <TabsTrigger value="login" className="data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Entrar</TabsTrigger>
+                <TabsTrigger value="register" className="data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Cadastrar</TabsTrigger>
               </TabsList>
             </CardHeader>
 
@@ -173,7 +174,7 @@ const Auth = () => {
 
                   <Button
                     type="submit"
-                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
+                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Entrando...' : 'Entrar'}
@@ -248,7 +249,7 @@ const Auth = () => {
 
                   <Button
                     type="submit"
-                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-all shadow-glow-primary hover:shadow-lg"
+                    className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Criando conta...' : 'Criar conta'}

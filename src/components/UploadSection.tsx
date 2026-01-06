@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
+import { useSyncGoalsWithExams } from '@/hooks/useSyncGoalsWithExams';
 
 interface UploadSectionProps {
   onUploadComplete?: () => void;
@@ -36,6 +37,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const [overallProgress, setOverallProgress] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { syncGoals } = useSyncGoalsWithExams();
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const createPreview = (file: File): Promise<string | null> => {
@@ -255,6 +257,10 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         description: `${successCount} exame(s) processado(s) com sucesso`,
       });
       onUploadComplete?.();
+      
+      // Sync health goals with new exam data
+      await syncGoals();
+      
       // Remove successful files after a delay
       setTimeout(() => {
         setFiles((prev) => prev.filter((f) => f.status !== 'success'));
