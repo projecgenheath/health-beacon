@@ -107,16 +107,17 @@ export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, file
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-2xl bg-card border transition-all duration-300 cursor-pointer',
+        'group relative overflow-hidden rounded-2xl bg-card border cursor-pointer',
+        'transition-all duration-300 ease-out',
         config.border,
-        isExpanded ? config.glow : 'shadow-sm hover:shadow-md',
+        isExpanded ? cn(config.glow, 'scale-[1.01]') : 'shadow-sm hover:shadow-md hover:-translate-y-0.5',
         'animate-slide-up'
       )}
       style={{ animationDelay: `${index * 50}ms` }}
       onClick={() => setIsExpanded(!isExpanded)}
     >
-      {/* Status indicator bar */}
-      <div className={cn('absolute left-0 top-0 h-full w-1', config.gradient)} />
+      {/* Status indicator bar with gradient animation */}
+      <div className={cn('absolute left-0 top-0 h-full w-1', config.gradient, 'transition-all duration-300', isExpanded && 'w-1.5')} />
 
       <div className="p-4 pl-5">
         <div className="flex items-center justify-between">

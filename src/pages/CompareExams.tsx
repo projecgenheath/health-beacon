@@ -384,36 +384,39 @@ const CompareExams = () => {
   const colors = ['hsl(var(--primary))', 'hsl(var(--status-healthy))', 'hsl(var(--status-warning))', 'hsl(var(--status-danger))', '#8884d8', '#82ca9d', '#ffc658', '#ff7c7c', '#7c7cff', '#7cffb2'];
 
   return (
-    <>
+    <div className="animate-fade-in">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={() => navigate('/')}>
+          <Button variant="ghost" onClick={() => navigate('/')} className="btn-press hover-glow">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>
           <div className="flex gap-2">
-            <Button onClick={() => exportToPDF(false)} variant="outline" disabled={comparisonData.length === 0}>
+            <Button onClick={() => exportToPDF(false)} variant="outline" disabled={comparisonData.length === 0} className="btn-press">
               <Download className="h-4 w-4 mr-2" />
               Exportar PDF
             </Button>
-            <Button onClick={() => exportToPDF(true)} variant="outline" disabled={allResults.length === 0}>
+            <Button onClick={() => exportToPDF(true)} variant="outline" disabled={allResults.length === 0} className="btn-press">
               <Image className="h-4 w-4 mr-2" />
               PDF + Gráfico
             </Button>
           </div>
         </div>
-        <h1 className="text-2xl font-bold text-foreground">Comparar Exames</h1>
-        <p className="text-muted-foreground">Compare seus resultados entre datas ou veja a evolução ao longo do tempo</p>
+        <h1 className="text-2xl font-bold text-foreground animate-slide-up">Comparar Exames</h1>
+        <p className="text-muted-foreground animate-slide-up stagger-1">Compare seus resultados entre datas ou veja a evolução ao longo do tempo</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 mb-6">
-        <Card>
+        <Card className="animate-slide-up stagger-2 hover-lift">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Data 1</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-primary animate-pulse-slow" />
+              Data 1
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={date1} onValueChange={setDate1}>
-              <SelectTrigger>
+              <SelectTrigger className="transition-smooth focus:ring-2 focus:ring-primary/30">
                 <SelectValue placeholder="Selecione uma data" />
               </SelectTrigger>
               <SelectContent>
@@ -427,13 +430,16 @@ const CompareExams = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="animate-slide-up stagger-3 hover-lift">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Data 2</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <div className="h-3 w-3 rounded-full bg-status-healthy animate-pulse-slow" style={{ animationDelay: '0.5s' }} />
+              Data 2
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <Select value={date2} onValueChange={setDate2}>
-              <SelectTrigger>
+              <SelectTrigger className="transition-smooth focus:ring-2 focus:ring-primary/30">
                 <SelectValue placeholder="Selecione uma data" />
               </SelectTrigger>
               <SelectContent>
@@ -794,7 +800,7 @@ const CompareExams = () => {
           )}
         </TabsContent>
       </Tabs>
-    </>
+    </div>
   );
 };
 
