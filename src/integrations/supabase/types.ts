@@ -103,6 +103,57 @@ export type Database = {
         }
         Relationships: []
       }
+      health_goals: {
+        Row: {
+          created_at: string
+          current_value: number | null
+          deadline: string | null
+          exam_name: string
+          id: string
+          notes: string | null
+          status: string
+          target_max: number | null
+          target_min: number | null
+          target_type: string
+          target_value: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          exam_name: string
+          id?: string
+          notes?: string | null
+          status?: string
+          target_max?: number | null
+          target_min?: number | null
+          target_type?: string
+          target_value: number
+          unit: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_value?: number | null
+          deadline?: string | null
+          exam_name?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          target_max?: number | null
+          target_min?: number | null
+          target_type?: string
+          target_value?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

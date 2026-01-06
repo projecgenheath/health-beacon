@@ -6,6 +6,7 @@ import { AlertsSection } from '@/components/AlertsSection';
 import { ExamsList } from '@/components/ExamsList';
 import { DashboardSkeleton } from '@/components/skeletons';
 import { ExportPDFButton } from '@/components/ExportPDFButton';
+import { HealthGoals } from '@/components/HealthGoals';
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
@@ -19,6 +20,7 @@ const Index = () => {
       {/* Left column - Summary and Upload */}
       <div className="space-y-6 lg:col-span-1">
         <HealthSummaryCard summary={summary} />
+        <HealthGoals />
         <UploadSection onUploadComplete={refetch} />
         <UploadHistory onReprocess={refetch} />
         <AlertsSection exams={exams} />
