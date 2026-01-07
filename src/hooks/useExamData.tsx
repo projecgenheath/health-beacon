@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { ExamResult, ExamHistory, HealthSummary, ExamStatus } from '@/types/exam';
@@ -31,13 +31,7 @@ export const useExamData = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchExamData();
-    }
-  }, [user]);
-
-  const fetchExamData = async () => {
+  const fetchExamData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -151,7 +145,13 @@ export const useExamData = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchExamData();
+    }
+  }, [user, fetchExamData]);
 
   return {
     exams,

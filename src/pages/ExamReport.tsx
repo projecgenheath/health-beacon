@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, Calendar, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,13 +44,7 @@ export default function ExamReport() {
   const [results, setResults] = useState<ExamResultItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user && examId) {
-      fetchExamDetails();
-    }
-  }, [user, examId]);
-
-  const fetchExamDetails = async () => {
+  const fetchExamDetails = useCallback(async () => {
     if (!examId) return;
 
     try {
@@ -84,7 +78,13 @@ export default function ExamReport() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [examId, navigate]);
+
+  useEffect(() => {
+    if (user && examId) {
+      fetchExamDetails();
+    }
+  }, [user, examId, fetchExamDetails]);
 
   const getStatusConfig = (status: ExamStatus) => {
     const configs = {
@@ -183,7 +183,7 @@ export default function ExamReport() {
 
     printWindow.document.close();
     printWindow.focus();
-    
+
     setTimeout(() => {
       printWindow.print();
     }, 250);

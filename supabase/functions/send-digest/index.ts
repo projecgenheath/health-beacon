@@ -62,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (const profile of profiles) {
       // Get user email from auth
       const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(profile.user_id);
-      
+
       if (authError || !authUser?.user?.email) {
         console.error(`Could not get email for user ${profile.user_id}:`, authError);
         continue;
@@ -90,19 +90,19 @@ const handler = async (req: Request): Promise<Response> => {
 
       // Calculate summary
       const totalExams = examResults.length;
-      const healthyCount = examResults.filter(r => r.status === 'healthy').length;
-      const warningCount = examResults.filter(r => r.status === 'warning').length;
-      const dangerCount = examResults.filter(r => r.status === 'danger').length;
+      const healthyCount = examResults.filter((r: { status: string }) => r.status === 'healthy').length;
+      const warningCount = examResults.filter((r: { status: string }) => r.status === 'warning').length;
+      const dangerCount = examResults.filter((r: { status: string }) => r.status === 'danger').length;
 
       const periodText = frequency === 'weekly' ? 'últimos 7 dias' : 'último mês';
       const userName = profile.full_name || 'Usuário';
 
       // Build exam list HTML
-      const examListHtml = examResults.slice(0, 10).map(exam => {
-        const statusColor = exam.status === 'healthy' ? '#10b981' : 
-                           exam.status === 'warning' ? '#f59e0b' : '#ef4444';
-        const statusText = exam.status === 'healthy' ? 'Normal' : 
-                          exam.status === 'warning' ? 'Atenção' : 'Alterado';
+      const examListHtml = examResults.slice(0, 10).map((exam: { status: string, name: string, value: number, unit: string, exam_date: string }) => {
+        const statusColor = exam.status === 'healthy' ? '#10b981' :
+          exam.status === 'warning' ? '#f59e0b' : '#ef4444';
+        const statusText = exam.status === 'healthy' ? 'Normal' :
+          exam.status === 'warning' ? 'Atenção' : 'Alterado';
         return `
           <tr>
             <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">${exam.name}</td>
@@ -191,18 +191,19 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         emailsSent: emailsSent.length,
-        recipients: emailsSent 
+        recipients: emailsSent
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in send-digest function:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

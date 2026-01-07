@@ -30,7 +30,7 @@ export const defaultFilters: FilterConfig = {
  * Hook para gerenciar estado de busca e filtros
  * Retorna funções para atualizar filtros e dados filtrados
  */
-export function useSearchAndFilter<T extends Record<string, any>>(
+export function useSearchAndFilter<T extends Record<string, unknown>>(
     data: T[],
     options: {
         searchFields: (keyof T)[];
@@ -146,8 +146,8 @@ export function useSearchAndFilter<T extends Record<string, any>>(
 
         // 6. Ordenação
         result.sort((a, b) => {
-            let aValue: any;
-            let bValue: any;
+            let aValue: string | number | Date;
+            let bValue: string | number | Date;
 
             switch (filters.sortBy) {
                 case 'date':

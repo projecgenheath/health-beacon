@@ -28,7 +28,7 @@ export const ExamChart = ({ history }: ExamChartProps) => {
   const maxValue = Math.max(...allValues, history.referenceMax);
   const padding = (maxValue - minValue) * 0.2;
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { payload: { status: string; value: number } }[]; label?: string }) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       const statusColors = {
@@ -36,7 +36,7 @@ export const ExamChart = ({ history }: ExamChartProps) => {
         warning: 'text-status-warning',
         danger: 'text-status-danger',
       };
-      
+
       return (
         <div className="bg-card rounded-lg shadow-lg border border-border p-3">
           <p className="text-sm font-medium text-foreground mb-1">{label}</p>
@@ -52,14 +52,14 @@ export const ExamChart = ({ history }: ExamChartProps) => {
     return null;
   };
 
-  const CustomDot = (props: any) => {
+  const CustomDot = (props: { cx: number; cy: number; payload: { status: string } }) => {
     const { cx, cy, payload } = props;
     const statusColors = {
       healthy: 'hsl(var(--status-healthy))',
       warning: 'hsl(var(--status-warning))',
       danger: 'hsl(var(--status-danger))',
     };
-    
+
     return (
       <circle
         cx={cx}
@@ -77,7 +77,7 @@ export const ExamChart = ({ history }: ExamChartProps) => {
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-          
+
           {/* Healthy zone shading */}
           <ReferenceArea
             y1={history.referenceMin}
@@ -85,7 +85,7 @@ export const ExamChart = ({ history }: ExamChartProps) => {
             fill="hsl(var(--status-healthy))"
             fillOpacity={0.1}
           />
-          
+
           {/* Reference lines */}
           <ReferenceLine
             y={history.referenceMax}
@@ -99,7 +99,7 @@ export const ExamChart = ({ history }: ExamChartProps) => {
             strokeDasharray="4 4"
             strokeOpacity={0.6}
           />
-          
+
           <XAxis
             dataKey="dateFormatted"
             tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}

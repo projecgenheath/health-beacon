@@ -89,55 +89,57 @@ const Profile = () => {
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user!.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const profileData = data as any;
+          setProfile({
+            full_name: profileData.full_name || '',
+            birth_date: profileData.birth_date || '',
+            cpf: profileData.cpf || '',
+            sex: profileData.sex || '',
+            gender: profileData.gender || '',
+            ethnicity: profileData.ethnicity || '',
+            marital_status: profileData.marital_status || '',
+            avatar_url: profileData.avatar_url || null,
+            email_notifications: profileData.email_notifications ?? true,
+            digest_frequency: (profileData.digest_frequency as 'none' | 'weekly' | 'monthly') || 'none',
+            address_country: profileData.address_country || 'Brasil',
+            address_state: profileData.address_state || '',
+            address_city: profileData.address_city || '',
+            address_neighborhood: profileData.address_neighborhood || '',
+            address_street: profileData.address_street || '',
+            address_number: profileData.address_number || '',
+            address_complement: profileData.address_complement || '',
+            phone: profileData.phone || '',
+            emergency_phone: profileData.emergency_phone || '',
+            weight: profileData.weight || null,
+            height: profileData.height || null,
+            allergies: profileData.allergies || '',
+            chronic_diseases: profileData.chronic_diseases || '',
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Erro ao carregar perfil');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (user) {
       fetchProfile();
     }
   }, [user]);
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user!.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setProfile({
-          full_name: data.full_name || '',
-          birth_date: data.birth_date || '',
-          cpf: data.cpf || '',
-          sex: data.sex || '',
-          gender: data.gender || '',
-          ethnicity: data.ethnicity || '',
-          marital_status: data.marital_status || '',
-          avatar_url: data.avatar_url || null,
-          email_notifications: data.email_notifications ?? true,
-          digest_frequency: (data.digest_frequency as 'none' | 'weekly' | 'monthly') || 'none',
-          address_country: data.address_country || 'Brasil',
-          address_state: data.address_state || '',
-          address_city: data.address_city || '',
-          address_neighborhood: data.address_neighborhood || '',
-          address_street: data.address_street || '',
-          address_number: data.address_number || '',
-          address_complement: data.address_complement || '',
-          phone: data.phone || '',
-          emergency_phone: data.emergency_phone || '',
-          weight: data.weight || null,
-          height: data.height || null,
-          allergies: data.allergies || '',
-          chronic_diseases: data.chronic_diseases || '',
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast.error('Erro ao carregar perfil');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const getAvatarUrl = (path: string | null) => {
     if (!path) return null;

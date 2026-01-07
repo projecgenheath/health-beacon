@@ -45,7 +45,7 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
     return <TrendingDown className="h-4 w-4 text-status-healthy" />;
   };
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: { status: string; value: number; fullDate: string } }[] }) => {
     if (active && payload && payload.length) {
       const item = payload[0].payload;
       const statusConfig = {
@@ -109,7 +109,7 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
               <p className={cn(
                 'text-lg font-bold',
                 Math.abs(variation) < 1 ? 'text-muted-foreground' :
-                variation > 0 ? 'text-status-warning' : 'text-status-healthy'
+                  variation > 0 ? 'text-status-warning' : 'text-status-healthy'
               )}>
                 {previousValue ? `${variation > 0 ? '+' : ''}${variation.toFixed(1)}%` : '—'}
               </p>
@@ -127,14 +127,14 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
                 <stop offset="100%" stopColor={`hsl(${gradientColor})`} stopOpacity={0.05} />
               </linearGradient>
             </defs>
-            
-            <CartesianGrid 
-              strokeDasharray="3 3" 
-              stroke="hsl(var(--border))" 
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="hsl(var(--border))"
               vertical={false}
               strokeOpacity={0.5}
             />
-            
+
             {/* Healthy zone shading */}
             <ReferenceArea
               y1={history.referenceMin}
@@ -143,18 +143,18 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
               fillOpacity={0.08}
               strokeOpacity={0}
             />
-            
+
             {/* Reference lines */}
             <ReferenceLine
               y={history.referenceMax}
               stroke="hsl(var(--status-healthy))"
               strokeDasharray="6 4"
               strokeOpacity={0.5}
-              label={{ 
-                value: 'Máx', 
+              label={{
+                value: 'Máx',
                 position: 'right',
                 fill: 'hsl(var(--muted-foreground))',
-                fontSize: 10 
+                fontSize: 10
               }}
             />
             <ReferenceLine
@@ -162,14 +162,14 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
               stroke="hsl(var(--status-healthy))"
               strokeDasharray="6 4"
               strokeOpacity={0.5}
-              label={{ 
-                value: 'Mín', 
+              label={{
+                value: 'Mín',
                 position: 'right',
                 fill: 'hsl(var(--muted-foreground))',
-                fontSize: 10 
+                fontSize: 10
               }}
             />
-            
+
             <XAxis
               dataKey="dateFormatted"
               tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
@@ -192,7 +192,7 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
               stroke={`hsl(${gradientColor})`}
               strokeWidth={3}
               fill={`url(#${gradientId})`}
-              dot={(props: any) => {
+              dot={(props: { cx: number; cy: number; payload: { status: string } }) => {
                 const { cx, cy, payload } = props;
                 const statusColors = {
                   healthy: 'hsl(var(--status-healthy))',
@@ -211,9 +211,9 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
                   />
                 );
               }}
-              activeDot={{ 
-                r: 10, 
-                strokeWidth: 3, 
+              activeDot={{
+                r: 10,
+                strokeWidth: 3,
                 stroke: 'hsl(var(--card))',
                 fill: `hsl(${gradientColor})`
               }}

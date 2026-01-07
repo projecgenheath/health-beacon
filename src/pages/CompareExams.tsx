@@ -72,17 +72,17 @@ const CompareExams = () => {
       fetchAvailableDates();
       fetchAllResults();
     }
-  }, [user]);
+  }, [user, fetchAvailableDates, fetchAllResults]);
 
   useEffect(() => {
     if (date1) fetchResultsForDate(date1, setResults1);
-  }, [date1]);
+  }, [date1, fetchResultsForDate]);
 
   useEffect(() => {
     if (date2) fetchResultsForDate(date2, setResults2);
-  }, [date2]);
+  }, [date2, fetchResultsForDate]);
 
-  const fetchAvailableDates = async () => {
+  const fetchAvailableDates = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -111,9 +111,9 @@ const CompareExams = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const fetchAllResults = async () => {
+  const fetchAllResults = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -127,9 +127,9 @@ const CompareExams = () => {
     } catch (error) {
       console.error('Error fetching all results:', error);
     }
-  };
+  }, [user]);
 
-  const fetchResultsForDate = async (date: string, setter: (results: ExamResultRow[]) => void) => {
+  const fetchResultsForDate = useCallback(async (date: string, setter: (results: ExamResultRow[]) => void) => {
     if (!user) return;
     try {
       const { data, error } = await supabase
@@ -143,7 +143,7 @@ const CompareExams = () => {
     } catch (error) {
       console.error('Error fetching results:', error);
     }
-  };
+  }, [user]);
 
   const getComparisonData = () => {
     const allNames = new Set([...results1.map(r => r.name), ...results2.map(r => r.name)]);
