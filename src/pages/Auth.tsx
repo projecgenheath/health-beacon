@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Activity, Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
@@ -215,7 +215,7 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col max-h-[70vh]">
+        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col max-h-[85vh]">
           <Tabs defaultValue="login" className="w-full flex-1 flex flex-col">
             <CardHeader className="pb-4 shrink-0">
               <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
@@ -272,7 +272,7 @@ const Auth = () => {
 
               {/* REGISTER TAB */}
               <TabsContent value="register" className="mt-0 h-full">
-                <ScrollArea className="h-full px-6 pb-6">
+                <div className="h-full overflow-y-auto px-6 pb-6">
                   <form onSubmit={handleRegister} className="space-y-6 pt-4">
 
                     {/* Account Info */}
@@ -570,7 +570,7 @@ const Auth = () => {
                       {isSubmitting ? 'Criando conta...' : 'Concluir Cadastro'}
                     </Button>
                   </form>
-                </ScrollArea>
+                </div>
               </TabsContent>
             </CardContent>
           </Tabs>
