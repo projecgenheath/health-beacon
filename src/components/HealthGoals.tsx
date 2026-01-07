@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Target, Plus, Trash2, CheckCircle2, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { toast } from 'sonner';
 import { AddGoalDialog } from './AddGoalDialog';
+import { HealthGoalsSkeleton } from '@/components/skeletons';
 
 interface HealthGoal {
   id: string;
@@ -126,23 +127,7 @@ export const HealthGoals = () => {
   };
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="h-5 w-5" />
-            Metas de Saúde
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-3">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-20 bg-muted rounded-lg" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <HealthGoalsSkeleton />;
   }
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { ExamStatus } from '@/types/exam';
 import { toast } from '@/hooks/use-toast';
+import { CompareExamsSkeleton } from '@/components/skeletons';
 import {
   LineChart,
   Line,
@@ -368,13 +369,7 @@ const CompareExams = () => {
   };
 
   if (authLoading || loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-medical-light/20 to-background">
-        <div className="animate-pulse">
-          <Activity className="h-12 w-12 text-primary" />
-        </div>
-      </div>
-    );
+    return <CompareExamsSkeleton />;
   }
 
   if (!user) return null;
