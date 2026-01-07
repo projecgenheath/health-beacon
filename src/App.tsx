@@ -20,6 +20,7 @@ const Index = lazy(() => import("./pages/Index"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ExamReport = lazy(() => import("./pages/ExamReport"));
 const CompareExams = lazy(() => import("./pages/CompareExams"));
+const Analytics = lazy(() => import("./pages/Analytics"));
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
                     }
                   >
                     <Route index element={<Index />} />
+                    <Route path="analytics" element={<Analytics />} />
                     <Route path="compare" element={<CompareExams />} />
                   </Route>
 
