@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload, Bell } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload, Bell, MapPin, Phone, Heart, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -22,10 +23,30 @@ import { cn } from '@/lib/utils';
 interface ProfileData {
   full_name: string | null;
   birth_date: string | null;
+  cpf: string | null;
   sex: string | null;
+  gender: string | null;
+  ethnicity: string | null;
+  marital_status: string | null;
   avatar_url: string | null;
   email_notifications: boolean;
   digest_frequency: 'none' | 'weekly' | 'monthly';
+  // Address
+  address_country: string | null;
+  address_state: string | null;
+  address_city: string | null;
+  address_neighborhood: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  // Contact
+  phone: string | null;
+  emergency_phone: string | null;
+  // Medical
+  weight: number | null;
+  height: number | null;
+  allergies: string | null;
+  chronic_diseases: string | null;
 }
 
 const Profile = () => {
@@ -38,10 +59,27 @@ const Profile = () => {
   const [profile, setProfile] = useState<ProfileData>({
     full_name: '',
     birth_date: '',
+    cpf: '',
     sex: '',
+    gender: '',
+    ethnicity: '',
+    marital_status: '',
     avatar_url: null,
     email_notifications: true,
     digest_frequency: 'none',
+    address_country: 'Brasil',
+    address_state: '',
+    address_city: '',
+    address_neighborhood: '',
+    address_street: '',
+    address_number: '',
+    address_complement: '',
+    phone: '',
+    emergency_phone: '',
+    weight: null,
+    height: null,
+    allergies: '',
+    chronic_diseases: '',
   });
 
   useEffect(() => {
@@ -60,7 +98,7 @@ const Profile = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name, birth_date, sex, avatar_url, email_notifications, digest_frequency')
+        .select('*')
         .eq('user_id', user!.id)
         .maybeSingle();
 
@@ -70,10 +108,27 @@ const Profile = () => {
         setProfile({
           full_name: data.full_name || '',
           birth_date: data.birth_date || '',
+          cpf: data.cpf || '',
           sex: data.sex || '',
+          gender: data.gender || '',
+          ethnicity: data.ethnicity || '',
+          marital_status: data.marital_status || '',
           avatar_url: data.avatar_url || null,
           email_notifications: data.email_notifications ?? true,
           digest_frequency: (data.digest_frequency as 'none' | 'weekly' | 'monthly') || 'none',
+          address_country: data.address_country || 'Brasil',
+          address_state: data.address_state || '',
+          address_city: data.address_city || '',
+          address_neighborhood: data.address_neighborhood || '',
+          address_street: data.address_street || '',
+          address_number: data.address_number || '',
+          address_complement: data.address_complement || '',
+          phone: data.phone || '',
+          emergency_phone: data.emergency_phone || '',
+          weight: data.weight || null,
+          height: data.height || null,
+          allergies: data.allergies || '',
+          chronic_diseases: data.chronic_diseases || '',
         });
       }
     } catch (error) {
@@ -152,11 +207,7 @@ const Profile = () => {
         .from('profiles')
         .upsert({
           user_id: user.id,
-          full_name: profile.full_name || null,
-          birth_date: profile.birth_date || null,
-          sex: profile.sex || null,
-          email_notifications: profile.email_notifications,
-          digest_frequency: profile.digest_frequency,
+          ...profile,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'user_id'
@@ -175,7 +226,7 @@ const Profile = () => {
 
   const handleDigestChange = async (value: 'none' | 'weekly' | 'monthly') => {
     setProfile((prev) => ({ ...prev, digest_frequency: value }));
-    
+
     if (!user) return;
 
     try {
@@ -201,7 +252,7 @@ const Profile = () => {
 
   const handleNotificationToggle = async (checked: boolean) => {
     setProfile((prev) => ({ ...prev, email_notifications: checked }));
-    
+
     if (!user) return;
 
     try {
@@ -252,198 +303,406 @@ const Profile = () => {
         </div>
       </header>
 
-      <main className="container py-6 max-w-lg space-y-6">
-        <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up">
-          {/* Avatar section */}
-          <div className="flex flex-col items-center mb-6">
-            <div className="relative group">
-              <div className={cn(
-                "h-24 w-24 rounded-full overflow-hidden flex items-center justify-center",
-                avatarUrl ? "" : "bg-primary/10"
-              )}>
-                {avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Avatar"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <User className="h-12 w-12 text-primary" />
-                )}
+      <main className="container py-6 max-w-4xl space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Avatar & Basic Info Card */}
+          <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up">
+            <div className="flex flex-col items-center mb-8">
+              <div className="relative group">
+                <div className={cn(
+                  "h-24 w-24 rounded-full overflow-hidden flex items-center justify-center",
+                  avatarUrl ? "" : "bg-primary/10"
+                )}>
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt="Avatar"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-primary" />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className={cn(
+                    "absolute inset-0 rounded-full flex items-center justify-center",
+                    "bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity",
+                    "cursor-pointer"
+                  )}
+                >
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-6 w-6 text-background animate-spin" />
+                  ) : (
+                    <Camera className="h-6 w-6 text-background" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className={cn(
-                  "absolute inset-0 rounded-full flex items-center justify-center",
-                  "bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity",
-                  "cursor-pointer"
-                )}
+                className="mt-3 text-sm text-primary hover:underline flex items-center gap-1"
               >
-                {uploadingAvatar ? (
-                  <Loader2 className="h-6 w-6 text-background animate-spin" />
-                ) : (
-                  <Camera className="h-6 w-6 text-background" />
-                )}
+                <Upload className="h-4 w-4" />
+                {uploadingAvatar ? 'Enviando...' : 'Alterar foto'}
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                className="hidden"
-              />
+              <div className="mt-2 text-center">
+                <p className="font-medium text-foreground">{user?.email}</p>
+              </div>
             </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              className="mt-3 text-sm text-primary hover:underline flex items-center gap-1"
-            >
-              <Upload className="h-4 w-4" />
-              {uploadingAvatar ? 'Enviando...' : 'Alterar foto'}
-            </button>
-            <div className="mt-2 text-center">
-              <p className="font-medium text-foreground">{user?.email}</p>
-              <p className="text-sm text-muted-foreground">
-                {profile.full_name || 'Adicione seu nome'}
-              </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="full_name" className="flex items-center gap-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  Nome completo
+                </Label>
+                <Input
+                  id="full_name"
+                  value={profile.full_name || ''}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="birth_date" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  Data de nascimento
+                </Label>
+                <Input
+                  id="birth_date"
+                  type="date"
+                  value={profile.birth_date || ''}
+                  onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <Input
+                  id="cpf"
+                  value={profile.cpf || ''}
+                  onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
+                  className="h-12 rounded-xl"
+                  placeholder="000.000.000-00"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="sex" className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                  Sexo Biológico
+                </Label>
+                <Select
+                  value={profile.sex || ''}
+                  onValueChange={(value) => setProfile({ ...profile, sex: value })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem>
+                    <SelectItem value="feminino">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender">Identidade de Gênero</Label>
+                <Select
+                  value={profile.gender || ''}
+                  onValueChange={(val) => setProfile({ ...profile, gender: val })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cisgenero">Cisgênero</SelectItem>
+                    <SelectItem value="transgenero">Transgênero</SelectItem>
+                    <SelectItem value="nao_binario">Não-binário</SelectItem>
+                    <SelectItem value="outro">Outro</SelectItem>
+                    <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ethnicity">Etnia/Cor</Label>
+                <Select
+                  value={profile.ethnicity || ''}
+                  onValueChange={(val) => setProfile({ ...profile, ethnicity: val })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="branca">Branca</SelectItem>
+                    <SelectItem value="preta">Preta</SelectItem>
+                    <SelectItem value="parda">Parda</SelectItem>
+                    <SelectItem value="amarela">Amarela</SelectItem>
+                    <SelectItem value="indigena">Indígena</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="marital_status">Estado Civil</Label>
+                <Select
+                  value={profile.marital_status || ''}
+                  onValueChange={(val) => setProfile({ ...profile, marital_status: val })}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                    <SelectItem value="casado">Casado(a)</SelectItem>
+                    <SelectItem value="separado">Separado(a)</SelectItem>
+                    <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                    <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="full_name" className="flex items-center gap-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                Nome completo
-              </Label>
-              <Input
-                id="full_name"
-                type="text"
-                placeholder="Seu nome completo"
-                value={profile.full_name || ''}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                className="h-12 rounded-xl"
-              />
+          {/* Address Section */}
+          <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '50ms' }}>
+            <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
+              <MapPin className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Endereço</h2>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="birth_date" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                Data de nascimento
-              </Label>
-              <Input
-                id="birth_date"
-                type="date"
-                value={profile.birth_date || ''}
-                onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
-                className="h-12 rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="sex" className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                Sexo
-              </Label>
-              <Select
-                value={profile.sex || ''}
-                onValueChange={(value) => setProfile({ ...profile, sex: value })}
-              >
-                <SelectTrigger className="h-12 rounded-xl">
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="masculino">Masculino</SelectItem>
-                  <SelectItem value="feminino">Feminino</SelectItem>
-                  <SelectItem value="outro">Outro</SelectItem>
-                  <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={saving}
-              className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                'Salvar alterações'
-              )}
-            </Button>
-          </form>
-        </div>
-
-        {/* Notification Preferences Card */}
-        <Card className="animate-slide-up" style={{ animationDelay: '100ms' }}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Bell className="h-5 w-5 text-primary" />
-              Notificações
-            </CardTitle>
-            <CardDescription>
-              Gerencie suas preferências de notificação por email
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="email-alerts" className="text-base">
-                  Alertas de exames
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba emails quando seus resultados apresentarem valores alterados ou que requerem atenção
-                </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address_country">País</Label>
+                <Input
+                  id="address_country"
+                  value={profile.address_country || ''}
+                  onChange={(e) => setProfile({ ...profile, address_country: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
               </div>
-              <Switch
-                id="email-alerts"
-                checked={profile.email_notifications}
-                onCheckedChange={handleNotificationToggle}
-              />
-            </div>
-            <Separator />
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label htmlFor="digest-frequency" className="text-base">
-                  Resumo por email
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Receba um resumo periódico de todos os seus exames
-                </p>
+              <div className="space-y-2">
+                <Label htmlFor="address_state">Estado</Label>
+                <Input
+                  id="address_state"
+                  value={profile.address_state || ''}
+                  onChange={(e) => setProfile({ ...profile, address_state: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
               </div>
-              <Select
-                value={profile.digest_frequency}
-                onValueChange={handleDigestChange}
-                disabled={!profile.email_notifications}
-              >
-                <SelectTrigger className="h-12 rounded-xl">
-                  <SelectValue placeholder="Selecione a frequência" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Desativado</SelectItem>
-                  <SelectItem value="weekly">Semanal</SelectItem>
-                  <SelectItem value="monthly">Mensal</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Label htmlFor="address_city">Cidade</Label>
+                <Input
+                  id="address_city"
+                  value={profile.address_city || ''}
+                  onChange={(e) => setProfile({ ...profile, address_city: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_neighborhood">Bairro</Label>
+                <Input
+                  id="address_neighborhood"
+                  value={profile.address_neighborhood || ''}
+                  onChange={(e) => setProfile({ ...profile, address_neighborhood: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="address_street">Rua</Label>
+                <Input
+                  id="address_street"
+                  value={profile.address_street || ''}
+                  onChange={(e) => setProfile({ ...profile, address_street: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_number">Número</Label>
+                <Input
+                  id="address_number"
+                  value={profile.address_number || ''}
+                  onChange={(e) => setProfile({ ...profile, address_number: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address_complement">Complemento</Label>
+                <Input
+                  id="address_complement"
+                  value={profile.address_complement || ''}
+                  onChange={(e) => setProfile({ ...profile, address_complement: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
             </div>
-            <Separator />
-            <div className="rounded-lg bg-muted/50 p-3">
-              <p className="text-xs text-muted-foreground">
-                {!profile.email_notifications
-                  ? '❌ Ative as notificações para receber emails sobre seus exames.'
-                  : profile.digest_frequency === 'none'
-                  ? '📧 Você receberá apenas alertas de valores alterados.'
-                  : profile.digest_frequency === 'weekly'
-                  ? '📊 Você receberá um resumo semanal + alertas de valores alterados.'
-                  : '📊 Você receberá um resumo mensal + alertas de valores alterados.'}
-              </p>
+          </div>
+
+          {/* Contact Section */}
+          <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
+              <Phone className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Contato</h2>
             </div>
-          </CardContent>
-        </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  value={profile.phone || ''}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_phone">Contato de Emergência</Label>
+                <Input
+                  id="emergency_phone"
+                  value={profile.emergency_phone || ''}
+                  onChange={(e) => setProfile({ ...profile, emergency_phone: e.target.value })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Health Section */}
+          <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '150ms' }}>
+            <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
+              <Heart className="h-5 w-5 text-primary" />
+              <h2 className="text-xl font-semibold">Dados de Saúde</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="weight">Peso (kg)</Label>
+                <Input
+                  id="weight"
+                  type="number"
+                  step="0.1"
+                  value={profile.weight ?? ''}
+                  onChange={(e) => setProfile({ ...profile, weight: e.target.value ? parseFloat(e.target.value) : null })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="height">Altura (cm)</Label>
+                <Input
+                  id="height"
+                  type="number"
+                  value={profile.height ?? ''}
+                  onChange={(e) => setProfile({ ...profile, height: e.target.value ? parseFloat(e.target.value) : null })}
+                  className="h-12 rounded-xl"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="allergies">Alergias</Label>
+                <Textarea
+                  id="allergies"
+                  value={profile.allergies || ''}
+                  onChange={(e) => setProfile({ ...profile, allergies: e.target.value })}
+                  className="min-h-[100px] rounded-xl"
+                  placeholder="Liste suas alergias..."
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
+                <Textarea
+                  id="chronic_diseases"
+                  value={profile.chronic_diseases || ''}
+                  onChange={(e) => setProfile({ ...profile, chronic_diseases: e.target.value })}
+                  className="min-h-[100px] rounded-xl"
+                  placeholder="Descreva doenças crônicas ou tratamentos em andamento..."
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Notification Preferences Card */}
+          <Card className="animate-slide-up" style={{ animationDelay: '200ms' }}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Bell className="h-5 w-5 text-primary" />
+                Notificações
+              </CardTitle>
+              <CardDescription>
+                Gerencie suas preferências de notificação por email
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="email-alerts" className="text-base">
+                    Alertas de exames
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receba emails quando seus resultados apresentarem valores alterados ou que requerem atenção
+                  </p>
+                </div>
+                <Switch
+                  id="email-alerts"
+                  checked={profile.email_notifications}
+                  onCheckedChange={handleNotificationToggle}
+                />
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label htmlFor="digest-frequency" className="text-base">
+                    Resumo por email
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Receba um resumo periódico de todos os seus exames
+                  </p>
+                </div>
+                <Select
+                  value={profile.digest_frequency}
+                  onValueChange={handleDigestChange}
+                  disabled={!profile.email_notifications}
+                >
+                  <SelectTrigger className="h-12 rounded-xl">
+                    <SelectValue placeholder="Selecione a frequência" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Desativado</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
+                    <SelectItem value="monthly">Mensal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Button
+            type="submit"
+            disabled={saving}
+            className="w-full h-12 rounded-xl gradient-primary text-primary-foreground font-medium text-lg fixed bottom-6 left-0 right-0 mx-auto max-w-md shadow-lg z-50 md:static md:max-w-none md:shadow-none"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Salvando alterações...
+              </>
+            ) : (
+              'Salvar Alterações'
+            )}
+          </Button>
+          {/* Spacer for fixed bottom button on mobile */}
+          <div className="h-16 md:hidden"></div>
+        </form>
       </main>
     </div>
   );
