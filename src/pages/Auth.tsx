@@ -198,7 +198,7 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-8">
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
@@ -206,7 +206,7 @@ const Auth = () => {
         <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/10 blur-2xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
-      <div className="relative w-full max-w-2xl max-h-[90vh]">
+      <div className="relative w-full max-w-2xl">
         <div className="text-center mb-8 animate-slide-up">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4 animate-float hover:scale-105 transition-spring">
             <Activity className="h-10 w-10 text-primary-foreground" />
@@ -215,7 +215,7 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col max-h-[85vh]">
+        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col">
           <Tabs defaultValue="login" className="w-full flex-1 flex flex-col">
             <CardHeader className="pb-4 shrink-0">
               <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
@@ -224,7 +224,7 @@ const Auth = () => {
               </TabsList>
             </CardHeader>
 
-            <CardContent className="flex-1 overflow-hidden p-0">
+            <CardContent className="p-0">
               {/* LOGIN TAB */}
               <TabsContent value="login" className="mt-0 p-6">
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -271,8 +271,8 @@ const Auth = () => {
               </TabsContent>
 
               {/* REGISTER TAB */}
-              <TabsContent value="register" className="mt-0 h-full">
-                <div className="h-full overflow-y-auto px-6 pb-6">
+              <TabsContent value="register" className="mt-0">
+                <div className="px-6 pb-6">
                   <form onSubmit={handleRegister} className="space-y-6 pt-4">
 
                     {/* Account Info */}
