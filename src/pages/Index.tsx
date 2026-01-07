@@ -1,4 +1,5 @@
 import { useExamData } from '@/hooks/useExamData';
+import { useGoalNotifications } from '@/hooks/useGoalNotifications';
 import { HealthSummaryCard } from '@/components/HealthSummaryCard';
 import { UploadSection } from '@/components/UploadSection';
 import { UploadHistory } from '@/components/UploadHistory';
@@ -10,6 +11,9 @@ import { HealthGoals } from '@/components/HealthGoals';
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
+  
+  // Initialize goal notifications
+  useGoalNotifications();
 
   if (dataLoading) {
     return <DashboardSkeleton />;

@@ -1,9 +1,10 @@
-import { Activity, User, Bell, LogOut, Settings, Sun, Moon, GitCompare } from 'lucide-react';
+import { Activity, User, LogOut, Settings, Sun, Moon, GitCompare, BarChart3 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/NotificationBell';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,7 @@ export const Header = () => {
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: Activity },
+    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
     { path: '/compare', label: 'Comparar', icon: GitCompare },
   ];
 
@@ -87,12 +89,7 @@ export const Header = () => {
             <Moon className="absolute top-2.5 left-2.5 h-5 w-5 rotate-90 scale-0 transition-all duration-300 dark:rotate-0 dark:scale-100" />
           </button>
 
-          <button className="relative p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-smooth btn-press">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-status-danger text-[10px] font-medium text-primary-foreground flex items-center justify-center animate-pulse-slow">
-              2
-            </span>
-          </button>
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

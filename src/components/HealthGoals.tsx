@@ -146,7 +146,7 @@ export const HealthGoals = () => {
   }
 
   return (
-    <>
+    <div id="health-goals-section">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -258,6 +258,6 @@ export const HealthGoals = () => {
         open={isDialogOpen} 
         onOpenChange={setIsDialogOpen}
       />
-    </>
+    </div>
   );
 };
