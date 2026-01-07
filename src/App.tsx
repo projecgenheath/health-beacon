@@ -22,7 +22,16 @@ const ExamReport = lazy(() => import("./pages/ExamReport"));
 const CompareExams = lazy(() => import("./pages/CompareExams"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 const App = () => (
   <ErrorBoundary>
@@ -32,7 +41,12 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
               <Suspense fallback={<LoadingScreen message="Carregando aplicação..." />}>
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
