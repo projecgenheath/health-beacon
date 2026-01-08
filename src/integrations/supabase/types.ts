@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      bmi_history: {
+        Row: {
+          bmi: number | null
+          created_at: string
+          exam_id: string | null
+          height: number
+          id: string
+          recorded_at: string
+          user_id: string
+          weight: number
+        }
+        Insert: {
+          bmi?: number | null
+          created_at?: string
+          exam_id?: string | null
+          height: number
+          id?: string
+          recorded_at?: string
+          user_id: string
+          weight: number
+        }
+        Update: {
+          bmi?: number | null
+          created_at?: string
+          exam_id?: string | null
+          height?: number
+          id?: string
+          recorded_at?: string
+          user_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bmi_history_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exam_results: {
         Row: {
           category: string | null

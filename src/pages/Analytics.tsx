@@ -1,10 +1,13 @@
-import { useState, useMemo, memo } from 'react';
+import { useState, useMemo } from 'react';
 import { useExamData } from '@/hooks/useExamData';
+import { useBMIHistory } from '@/hooks/useBMIHistory';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { AnalyticsSkeleton } from '@/components/skeletons';
+import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
 import { 
   LineChart, 
   Line, 
@@ -20,16 +23,20 @@ import {
   Cell,
   BarChart,
   Bar,
-  Legend
+  Legend,
+  ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import { format, parseISO, subMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Minus, Activity, Target, Calendar, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Activity, Target, Calendar, AlertTriangle, Scale, Plus } from 'lucide-react';
 
 const Analytics = () => {
   const { exams, histories, summary, loading } = useExamData();
+  const { history: bmiHistory, stats: bmiStats, loading: bmiLoading, refetch: refetchBMI, getBMICategory } = useBMIHistory();
   const [selectedExam, setSelectedExam] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<string>('12');
+  const [showBMIDialog, setShowBMIDialog] = useState(false);
 
   // Filter data by time range
   const filteredHistories = useMemo(() => {
@@ -39,6 +46,72 @@ const Analytics = () => {
       history: h.history.filter(item => isAfter(parseISO(item.date), cutoffDate))
     })).filter(h => h.history.length > 0);
   }, [histories, timeRange]);
+
+  // Filter BMI history by time range
+  const filteredBMIHistory = useMemo(() => {
+    const cutoffDate = subMonths(new Date(), parseInt(timeRange));
+    return bmiHistory
+      .filter(item => isAfter(parseISO(item.recorded_at), cutoffDate))
+      .map(item => ({
+        ...item,
+        dateFormatted: format(parseISO(item.recorded_at), 'dd/MM/yy', { locale: ptBR }),
+        fullDate: format(parseISO(item.recorded_at), "d 'de' MMMM, yyyy", { locale: ptBR }),
+        category: getBMICategory(item.bmi),
+      }));
+  }, [bmiHistory, timeRange, getBMICategory]);
+
+  // Health Overview data combining exam status and BMI
+  const healthOverviewData = useMemo(() => {
+    const dateMap = new Map<string, {
+      date: string;
+      dateFormatted: string;
+      healthScore: number;
+      bmi: number | null;
+      totalExams: number;
+      healthyExams: number;
+    }>();
+
+    // Process exam history for health score
+    histories.forEach(h => {
+      h.history.forEach(item => {
+        if (!dateMap.has(item.date)) {
+          dateMap.set(item.date, {
+            date: item.date,
+            dateFormatted: format(parseISO(item.date), 'dd/MM', { locale: ptBR }),
+            healthScore: 0,
+            bmi: null,
+            totalExams: 0,
+            healthyExams: 0,
+          });
+        }
+        const entry = dateMap.get(item.date)!;
+        entry.totalExams++;
+        if (item.status === 'healthy') entry.healthyExams++;
+        entry.healthScore = Math.round((entry.healthyExams / entry.totalExams) * 100);
+      });
+    });
+
+    // Add BMI data
+    bmiHistory.forEach(item => {
+      const existing = dateMap.get(item.recorded_at);
+      if (existing) {
+        existing.bmi = item.bmi;
+      } else {
+        dateMap.set(item.recorded_at, {
+          date: item.recorded_at,
+          dateFormatted: format(parseISO(item.recorded_at), 'dd/MM', { locale: ptBR }),
+          healthScore: 0,
+          bmi: item.bmi,
+          totalExams: 0,
+          healthyExams: 0,
+        });
+      }
+    });
+
+    return Array.from(dateMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-20);
+  }, [histories, bmiHistory]);
 
   // Status distribution for pie chart
   const statusDistribution = useMemo(() => [
@@ -88,7 +161,7 @@ const Analytics = () => {
       .slice(-6);
   }, [histories]);
 
-  if (loading) {
+  if (loading || bmiLoading) {
     return <AnalyticsSkeleton />;
   }
 
@@ -173,6 +246,189 @@ const Analytics = () => {
 
         {/* Trends Tab */}
         <TabsContent value="trends" className="space-y-4">
+          {/* Health Overview with BMI */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Histórico da Visão Geral da Saúde</CardTitle>
+                  <CardDescription>
+                    Acompanhe sua taxa de saúde e IMC ao longo do tempo
+                  </CardDescription>
+                </div>
+                <Button onClick={() => setShowBMIDialog(true)} size="sm" variant="outline">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Atualizar IMC
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[350px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={healthOverviewData}>
+                    <defs>
+                      <linearGradient id="colorHealth" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--status-healthy))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--status-healthy))" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorBMI" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis 
+                      dataKey="dateFormatted" 
+                      className="text-xs"
+                    />
+                    <YAxis 
+                      yAxisId="left"
+                      domain={[0, 100]}
+                      className="text-xs"
+                      label={{ value: 'Taxa Saúde (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10 } }}
+                    />
+                    <YAxis 
+                      yAxisId="right"
+                      orientation="right"
+                      domain={[15, 40]}
+                      className="text-xs"
+                      label={{ value: 'IMC', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fontSize: 10 } }}
+                    />
+                    {/* BMI Reference zones */}
+                    <ReferenceArea yAxisId="right" y1={18.5} y2={24.9} fill="hsl(var(--status-healthy))" fillOpacity={0.1} />
+                    <ReferenceLine yAxisId="right" y={18.5} stroke="hsl(var(--status-healthy))" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <ReferenceLine yAxisId="right" y={24.9} stroke="hsl(var(--status-healthy))" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <ReferenceLine yAxisId="right" y={30} stroke="hsl(var(--status-danger))" strokeDasharray="3 3" strokeOpacity={0.5} />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                      formatter={(value: number, name: string) => {
+                        if (name === 'Taxa de Saúde') return [`${value}%`, name];
+                        if (name === 'IMC') return [value?.toFixed(1), name];
+                        return [value, name];
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="healthScore"
+                      name="Taxa de Saúde"
+                      stroke="hsl(var(--status-healthy))"
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--status-healthy))', strokeWidth: 2 }}
+                      connectNulls
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="bmi"
+                      name="IMC"
+                      stroke="hsl(var(--primary))"
+                      strokeWidth={2}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                      connectNulls
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* BMI Legend */}
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+                <p className="font-medium mb-1">Referência IMC:</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                  <span>• &lt; 18.5: Abaixo do peso</span>
+                  <span className="text-status-healthy">• 18.5 - 24.9: Normal</span>
+                  <span>• 25 - 29.9: Sobrepeso</span>
+                  <span className="text-status-danger">• ≥ 30: Obesidade</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* BMI History Card */}
+          {filteredBMIHistory.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-primary" />
+                  Histórico do IMC
+                </CardTitle>
+                <CardDescription>
+                  Suas medições de peso, altura e IMC
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-4 mb-4">
+                  <div className="bg-muted/30 rounded-xl p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">IMC Atual</p>
+                    <p className={`text-2xl font-bold ${bmiStats.current ? getBMICategory(bmiStats.current).status === 'healthy' ? 'text-status-healthy' : bmiStats.current >= 30 ? 'text-status-danger' : 'text-status-warning' : ''}`}>
+                      {bmiStats.current?.toFixed(1) || '-'}
+                    </p>
+                    {bmiStats.current && (
+                      <p className="text-xs text-muted-foreground">{getBMICategory(bmiStats.current).label}</p>
+                    )}
+                  </div>
+                  <div className="bg-muted/30 rounded-xl p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Média</p>
+                    <p className="text-2xl font-bold">{bmiStats.average?.toFixed(1) || '-'}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-xl p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Mínimo</p>
+                    <p className="text-2xl font-bold">{bmiStats.min?.toFixed(1) || '-'}</p>
+                  </div>
+                  <div className="bg-muted/30 rounded-xl p-4 text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Variação</p>
+                    <div className="flex items-center justify-center gap-1">
+                      {bmiStats.trend === 'up' && <TrendingUp className="h-4 w-4 text-status-warning" />}
+                      {bmiStats.trend === 'down' && <TrendingDown className="h-4 w-4 text-status-healthy" />}
+                      {bmiStats.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground" />}
+                      <p className="text-2xl font-bold">
+                        {bmiStats.change !== null ? `${bmiStats.change > 0 ? '+' : ''}${bmiStats.change.toFixed(1)}%` : '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* BMI History Timeline */}
+                <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                  {filteredBMIHistory.slice().reverse().map((record, idx) => (
+                    <div 
+                      key={record.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`h-2 w-2 rounded-full ${
+                          record.category.status === 'healthy' ? 'bg-status-healthy' :
+                          record.category.status === 'danger' ? 'bg-status-danger' : 'bg-status-warning'
+                        }`} />
+                        <div>
+                          <p className="text-sm font-medium">{record.fullDate}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {record.weight}kg • {record.height}cm
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${
+                          record.category.status === 'healthy' ? 'text-status-healthy' :
+                          record.category.status === 'danger' ? 'text-status-danger' : 'text-status-warning'
+                        }`}>
+                          {record.bmi.toFixed(1)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{record.category.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Exam Evolution */}
           <Card>
             <CardHeader>
               <CardTitle>Evolução dos Exames</CardTitle>
@@ -191,7 +447,7 @@ const Analytics = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="h-[350px]">
+              <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart>
                     <defs>
@@ -395,6 +651,13 @@ const Analytics = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* BMI Update Dialog */}
+      <UpdateBMIDialog
+        open={showBMIDialog}
+        onOpenChange={setShowBMIDialog}
+        onSuccess={refetchBMI}
+      />
     </div>
   );
 };
