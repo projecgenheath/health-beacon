@@ -67,21 +67,6 @@ const CompareExams = () => {
 
 
 
-  useEffect(() => {
-    if (user) {
-      fetchAvailableDates();
-      fetchAllResults();
-    }
-  }, [user, fetchAvailableDates, fetchAllResults]);
-
-  useEffect(() => {
-    if (date1) fetchResultsForDate(date1, setResults1);
-  }, [date1, fetchResultsForDate]);
-
-  useEffect(() => {
-    if (date2) fetchResultsForDate(date2, setResults2);
-  }, [date2, fetchResultsForDate]);
-
   const fetchAvailableDates = useCallback(async () => {
     if (!user) return;
     try {
@@ -144,6 +129,22 @@ const CompareExams = () => {
       console.error('Error fetching results:', error);
     }
   }, [user]);
+
+  // Effects must come after callbacks
+  useEffect(() => {
+    if (user) {
+      fetchAvailableDates();
+      fetchAllResults();
+    }
+  }, [user, fetchAvailableDates, fetchAllResults]);
+
+  useEffect(() => {
+    if (date1) fetchResultsForDate(date1, setResults1);
+  }, [date1, fetchResultsForDate]);
+
+  useEffect(() => {
+    if (date2) fetchResultsForDate(date2, setResults2);
+  }, [date2, fetchResultsForDate]);
 
   const getComparisonData = () => {
     const allNames = new Set([...results1.map(r => r.name), ...results2.map(r => r.name)]);

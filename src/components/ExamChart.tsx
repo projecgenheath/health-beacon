@@ -52,8 +52,10 @@ export const ExamChart = ({ history }: ExamChartProps) => {
     return null;
   };
 
-  const CustomDot = (props: { cx: number; cy: number; payload: { status: string } }) => {
+  const CustomDot = (props: { cx?: number; cy?: number; payload?: { status: string } }) => {
     const { cx, cy, payload } = props;
+    if (cx === undefined || cy === undefined || !payload) return null;
+    
     const statusColors = {
       healthy: 'hsl(var(--status-healthy))',
       warning: 'hsl(var(--status-warning))',

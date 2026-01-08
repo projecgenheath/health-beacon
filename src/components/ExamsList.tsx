@@ -25,7 +25,7 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
   // Usar o hook de busca e filtros
   const {
     filters,
-    filteredData: filteredExams,
+    filteredData,
     stats,
     setSearchTerm,
     setDateRange,
@@ -34,12 +34,14 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
     toggleLab,
     setSorting,
     resetFilters,
-  } = useSearchAndFilter(exams, {
+  } = useSearchAndFilter(exams as unknown as Record<string, unknown>[], {
     searchFields: ['name', 'category'],
     dateField: 'date',
     statusField: 'status',
     categoryField: 'category',
   });
+
+  const filteredExams = filteredData as unknown as ExamResult[];
 
   const getHistory = (examName: string) => {
     return histories.find((h) => h.examName === examName);

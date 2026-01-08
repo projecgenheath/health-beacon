@@ -192,8 +192,10 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
               stroke={`hsl(${gradientColor})`}
               strokeWidth={3}
               fill={`url(#${gradientId})`}
-              dot={(props: { cx: number; cy: number; payload: { status: string } }) => {
-                const { cx, cy, payload } = props;
+              dot={(props: { cx?: number; cy?: number; payload?: { status: string }; index?: number }) => {
+                const { cx, cy, payload, index } = props;
+                if (cx === undefined || cy === undefined || !payload) return null;
+                
                 const statusColors = {
                   healthy: 'hsl(var(--status-healthy))',
                   warning: 'hsl(var(--status-warning))',
@@ -201,7 +203,7 @@ export const ImprovedExamChart = ({ history, showDetails = true }: ImprovedExamC
                 };
                 return (
                   <circle
-                    key={props.index}
+                    key={index}
                     cx={cx}
                     cy={cy}
                     r={6}
