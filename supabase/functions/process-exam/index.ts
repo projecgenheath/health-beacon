@@ -22,6 +22,27 @@ interface ParsedExamData {
   results: ExamResult[];
 }
 
+function normalizeExamName(name: string): string {
+  return name
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[–—−-]/g, ' ') // Replace all types of dashes with space
+    .replace(/[^A-Z0-9\s]/g, ' ') // Keep only alphanumeric
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function parseLocaleNumber(value: any): number {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return 0;
+
+  // Replace comma with dot and remove any characters that aren't digits, dots, or minus signs
+  const normalizedValue = value.replace(',', '.').replace(/[^\d.-]/g, '');
+  const parsed = parseFloat(normalizedValue);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -80,7 +101,7 @@ serve(async (req) => {
 
     // Configure a Genkit instance
     const ai = genkit({
-      plugins: [googleAI({ apiKey: "AIzaSyBIP6herDQN5BTrQl6uGjijOLsWV8WqZMg" })],
+      plugins: [googleAI({ apiKey: Deno.env.get('GOOGLE_AI_API_KEY') })],
       model: gemini15Flash,
     });
 
@@ -92,7 +113,7 @@ serve(async (req) => {
           role: 'system',
           content: `You are an expert medical lab exam parser. Extract all exam results from the provided document image.
           
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format, with no extra text or markdown:
 {
   "lab_name": "string or null",
   "exam_date": "YYYY-MM-DD or null",
@@ -107,7 +128,12 @@ Return ONLY valid JSON in this exact format:
       "status": "healthy" | "warning" | "danger"
     }
   ]
-}`
+}
+
+IMPORTANT:
+1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
+2. For exam names, use a consistent name if possible.
+3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.`
         },
         {
           role: 'user',
@@ -179,8 +205,8 @@ Return ONLY valid JSON in this exact format:
       const examResults = validResults.map(result => ({
         exam_id: examId,
         user_id: user.id,
-        name: result.name.trim(),
-        value: Number(result.value) || 0,
+        name: normalizeExamName(result.name),
+        value: parseLocaleNumber(result.value),
         unit: result.unit?.trim() || '-',
         reference_min: result.reference_min ?? null,
         reference_max: result.reference_max ?? null,
