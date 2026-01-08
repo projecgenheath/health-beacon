@@ -8,13 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AnalyticsSkeleton } from '@/components/skeletons';
 import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   AreaChart,
   Area,
@@ -133,18 +133,35 @@ const Analytics = () => {
   // Trend calculation for each exam
   const examTrends = useMemo(() => {
     return filteredHistories.map(h => {
-      if (h.history.length < 2) return { name: h.examName, trend: 'stable', change: 0 };
-      
+      const latest = h.history[h.history.length - 1];
+      if (h.history.length < 2) {
+        return {
+          name: h.examName,
+          trend: 'stable' as const,
+          change: 0,
+          unit: h.unit,
+          currentValue: latest.value,
+          status: latest.status
+        };
+      }
+
       const first = h.history[0].value;
-      const last = h.history[h.history.length - 1].value;
+      const last = latest.value;
       const change = ((last - first) / first) * 100;
-      
+
       let trend: 'up' | 'down' | 'stable' = 'stable';
       if (change > 5) trend = 'up';
       else if (change < -5) trend = 'down';
-      
-      return { name: h.examName, trend, change, unit: h.unit, currentValue: last };
-    });
+
+      return {
+        name: h.examName,
+        trend,
+        change,
+        unit: h.unit,
+        currentValue: last,
+        status: latest.status
+      };
+    }).filter(t => t.status === 'warning' || t.status === 'danger');
   }, [filteredHistories]);
 
   // Monthly exam count
@@ -268,26 +285,26 @@ const Analytics = () => {
                   <LineChart data={healthOverviewData}>
                     <defs>
                       <linearGradient id="colorHealth" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--status-healthy))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--status-healthy))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(var(--status-healthy))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--status-healthy))" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="colorBMI" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="dateFormatted" 
+                    <XAxis
+                      dataKey="dateFormatted"
                       className="text-xs"
                     />
-                    <YAxis 
+                    <YAxis
                       yAxisId="left"
                       domain={[0, 100]}
                       className="text-xs"
                       label={{ value: 'Taxa Saúde (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10 } }}
                     />
-                    <YAxis 
+                    <YAxis
                       yAxisId="right"
                       orientation="right"
                       domain={[15, 40]}
@@ -299,9 +316,9 @@ const Analytics = () => {
                     <ReferenceLine yAxisId="right" y={18.5} stroke="hsl(var(--status-healthy))" strokeDasharray="3 3" strokeOpacity={0.5} />
                     <ReferenceLine yAxisId="right" y={24.9} stroke="hsl(var(--status-healthy))" strokeDasharray="3 3" strokeOpacity={0.5} />
                     <ReferenceLine yAxisId="right" y={30} stroke="hsl(var(--status-danger))" strokeDasharray="3 3" strokeOpacity={0.5} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
@@ -396,15 +413,14 @@ const Analytics = () => {
                 {/* BMI History Timeline */}
                 <div className="space-y-2 max-h-[200px] overflow-y-auto">
                   {filteredBMIHistory.slice().reverse().map((record, idx) => (
-                    <div 
+                    <div
                       key={record.id}
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`h-2 w-2 rounded-full ${
-                          record.category.status === 'healthy' ? 'bg-status-healthy' :
+                        <div className={`h-2 w-2 rounded-full ${record.category.status === 'healthy' ? 'bg-status-healthy' :
                           record.category.status === 'danger' ? 'bg-status-danger' : 'bg-status-warning'
-                        }`} />
+                          }`} />
                         <div>
                           <p className="text-sm font-medium">{record.fullDate}</p>
                           <p className="text-xs text-muted-foreground">
@@ -413,10 +429,9 @@ const Analytics = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-bold ${
-                          record.category.status === 'healthy' ? 'text-status-healthy' :
+                        <p className={`text-lg font-bold ${record.category.status === 'healthy' ? 'text-status-healthy' :
                           record.category.status === 'danger' ? 'text-status-danger' : 'text-status-warning'
-                        }`}>
+                          }`}>
                           {record.bmi.toFixed(1)}
                         </p>
                         <p className="text-xs text-muted-foreground">{record.category.label}</p>
@@ -449,42 +464,97 @@ const Analytics = () => {
             <CardContent>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart>
+                  <AreaChart margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                      </linearGradient>
+                      {filteredHistories.map((h, idx) => (
+                        <linearGradient key={`gradient-${h.examName}`} id={`color-${idx}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={`hsl(var(--chart-${(idx % 5) + 1}))`} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={`hsl(var(--chart-${(idx % 5) + 1}))`} stopOpacity={0} />
+                        </linearGradient>
+                      ))}
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis 
-                      dataKey="date" 
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      type="category"
+                      allowDuplicatedCategory={false}
                       tickFormatter={(value) => format(parseISO(value), 'dd/MM', { locale: ptBR })}
                       className="text-xs"
                     />
-                    <YAxis className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                    <YAxis
+                      className="text-xs"
+                      domain={selectedExam === 'all' ? [0, 120] : ['auto', 'auto']}
+                      label={selectedExam === 'all' ? { value: '% da Ref.', angle: -90, position: 'insideLeft', style: { fontSize: 10 } } : undefined}
+                    />
+                    <Tooltip
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-card rounded-xl shadow-lg border border-border p-4 min-w-[200px]">
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {label ? format(parseISO(label as string), "d 'de' MMMM, yyyy", { locale: ptBR }) : ''}
+                              </p>
+                              <div className="space-y-2">
+                                {payload.map((entry, index) => {
+                                  const historyItem = filteredHistories.find(h => h.examName === entry.name);
+                                  const originalPoint = historyItem?.history.find(p => p.date === label);
+
+                                  return (
+                                    <div key={index} className="flex flex-col border-b border-border/50 pb-1 last:border-0 last:pb-0">
+                                      <div className="flex items-center justify-between gap-4">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                          <span className="text-xs font-medium">{entry.name}</span>
+                                        </div>
+                                        <span className="text-sm font-bold">
+                                          {originalPoint ? `${originalPoint.value} ${historyItem?.unit}` : entry.value}
+                                        </span>
+                                      </div>
+                                      {selectedExam === 'all' && (
+                                        <div className="flex justify-end">
+                                          <span className="text-[10px] text-muted-foreground">
+                                            {entry.value?.toString()}% da referência
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
                       }}
-                      labelFormatter={(value) => format(parseISO(value as string), "d 'de' MMMM, yyyy", { locale: ptBR })}
                     />
                     <Legend />
                     {(selectedExam === 'all' ? filteredHistories.slice(0, 5) : filteredHistories.filter(h => h.examName === selectedExam))
-                      .map((h, idx) => (
-                        <Area
-                          key={h.examName}
-                          type="monotone"
-                          data={h.history}
-                          dataKey="value"
-                          name={h.examName}
-                          stroke={`hsl(var(--chart-${(idx % 5) + 1}))`}
-                          fill={`url(#colorValue)`}
-                          strokeWidth={2}
-                        />
-                      ))}
+                      .map((h, idx) => {
+                        const chartData = selectedExam === 'all'
+                          ? h.history.map(p => {
+                            const range = h.referenceMax - h.referenceMin;
+                            const normalizedValue = range > 0
+                              ? Math.round(((p.value - h.referenceMin) / range) * 100)
+                              : p.value;
+                            return { ...p, normalizedValue };
+                          })
+                          : h.history;
+
+                        return (
+                          <Area
+                            key={h.examName}
+                            type="monotone"
+                            data={chartData}
+                            dataKey={selectedExam === 'all' ? "normalizedValue" : "value"}
+                            name={h.examName}
+                            stroke={`hsl(var(--chart-${(idx % 5) + 1}))`}
+                            fill={`url(#color-${idx})`}
+                            strokeWidth={2}
+                            dot={{ r: 3 }}
+                            activeDot={{ r: 5, strokeWidth: 0 }}
+                          />
+                        );
+                      })}
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -493,30 +563,40 @@ const Analytics = () => {
 
           {/* Trend Indicators */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {examTrends.slice(0, 6).map((trend, idx) => (
-              <Card key={trend.name} className="animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
-                <CardContent className="pt-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium">{trend.name}</p>
-                      <p className="text-2xl font-bold">
-                        {trend.currentValue?.toFixed(1)} <span className="text-sm text-muted-foreground">{trend.unit}</span>
-                      </p>
+            {examTrends.length > 0 ? (
+              examTrends.map((trend, idx) => (
+                <Card key={trend.name} className="animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-sm font-medium">{trend.name}</p>
+                          <Badge variant={trend.status === 'danger' ? 'destructive' : 'secondary'} className="text-[10px] h-4 px-1">
+                            {trend.status === 'danger' ? 'Alterado' : 'Atenção'}
+                          </Badge>
+                        </div>
+                        <p className="text-2xl font-bold">
+                          {trend.currentValue?.toFixed(1)} <span className="text-sm text-muted-foreground">{trend.unit}</span>
+                        </p>
+                      </div>
+                      <div className={`flex items-center gap-1 ${trend.trend === 'up' ? 'text-red-500' :
+                          trend.trend === 'down' ? 'text-green-500' :
+                            'text-muted-foreground'
+                        }`}>
+                        {trend.trend === 'up' ? <TrendingUp className="h-5 w-5" /> :
+                          trend.trend === 'down' ? <TrendingDown className="h-5 w-5" /> :
+                            <Minus className="h-5 w-5" />}
+                        <span className="text-sm font-medium">{Math.abs(trend.change).toFixed(1)}%</span>
+                      </div>
                     </div>
-                    <div className={`flex items-center gap-1 ${
-                      trend.trend === 'up' ? 'text-red-500' : 
-                      trend.trend === 'down' ? 'text-green-500' : 
-                      'text-muted-foreground'
-                    }`}>
-                      {trend.trend === 'up' ? <TrendingUp className="h-5 w-5" /> : 
-                       trend.trend === 'down' ? <TrendingDown className="h-5 w-5" /> : 
-                       <Minus className="h-5 w-5" />}
-                      <span className="text-sm font-medium">{Math.abs(trend.change).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="col-span-full py-8 text-center bg-muted/20 rounded-xl border border-border border-dashed">
+                <p className="text-muted-foreground text-sm">Tudo certo! No momento você não possui exames alterados ou em atenção.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -565,9 +645,9 @@ const Analytics = () => {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis type="number" />
                       <YAxis dataKey="name" type="category" width={100} className="text-xs" />
-                      <Tooltip 
-                        contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
@@ -595,9 +675,9 @@ const Analytics = () => {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="month" className="text-xs" />
                     <YAxis className="text-xs" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--card))', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px'
                       }}
@@ -620,8 +700,8 @@ const Analytics = () => {
             <CardContent>
               <div className="space-y-4">
                 {exams.map((exam, idx) => (
-                  <div 
-                    key={exam.id} 
+                  <div
+                    key={exam.id}
                     className="flex items-center justify-between p-4 rounded-lg bg-muted/50 animate-slide-up transition-all duration-300 hover:bg-muted"
                     style={{ animationDelay: `${idx * 0.03}s` }}
                   >
@@ -638,10 +718,10 @@ const Analytics = () => {
                       </div>
                       <Badge variant={
                         exam.status === 'healthy' ? 'default' :
-                        exam.status === 'warning' ? 'secondary' : 'destructive'
+                          exam.status === 'warning' ? 'secondary' : 'destructive'
                       }>
                         {exam.status === 'healthy' ? 'Normal' :
-                         exam.status === 'warning' ? 'Atenção' : 'Crítico'}
+                          exam.status === 'warning' ? 'Atenção' : 'Crítico'}
                       </Badge>
                     </div>
                   </div>
