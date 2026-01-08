@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useSyncGoalsWithExams } from '@/hooks/useSyncGoalsWithExams';
+import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
 
 interface UploadSectionProps {
   onUploadComplete?: () => void;
@@ -35,6 +36,9 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState<ProcessingStep>('idle');
   const [overallProgress, setOverallProgress] = useState(0);
+  const [showBMIDialog, setShowBMIDialog] = useState(false);
+  const [lastExamId, setLastExamId] = useState<string | undefined>();
+  const [lastExamDate, setLastExamDate] = useState<string | undefined>();
   const { toast } = useToast();
   const { user } = useAuth();
   const { syncGoals } = useSyncGoalsWithExams();
@@ -260,6 +264,9 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
       
       // Sync health goals with new exam data
       await syncGoals();
+      
+      // Show BMI update dialog
+      setShowBMIDialog(true);
       
       // Remove successful files after a delay
       setTimeout(() => {
@@ -491,6 +498,14 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           )}
         </div>
       )}
+
+      {/* BMI Update Dialog */}
+      <UpdateBMIDialog
+        open={showBMIDialog}
+        onOpenChange={setShowBMIDialog}
+        examId={lastExamId}
+        examDate={lastExamDate}
+      />
     </div>
   );
 };
