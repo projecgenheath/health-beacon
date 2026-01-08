@@ -51,7 +51,7 @@ serve(async (req) => {
     }
 
     const { fileUrl, fileName, examId } = await req.json();
-    
+
     if (!fileUrl || !examId) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields: fileUrl, examId' }),
@@ -65,7 +65,7 @@ serve(async (req) => {
     const fileResponse = await fetch(fileUrl, {
       headers: { Authorization: authHeader }
     });
-    
+
     if (!fileResponse.ok) {
       throw new Error('Failed to fetch file');
     }
@@ -74,40 +74,24 @@ serve(async (req) => {
     const base64Content = await blobToBase64(fileBlob);
     const mimeType = fileBlob.type || 'application/pdf';
 
-    // Use Lovable AI to extract exam data
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
+    // --- INÍCIO DA NOVA INTEGRAÇÃO COM GENKIT ---
+    const { genkit } = await import("npm:genkit@0.5.15");
+    const { googleAI, gemini15Flash } = await import("npm:@genkit-ai/googleai@0.5.15");
 
-    console.log('Calling AI for OCR extraction...');
+    // Configure a Genkit instance
+    const ai = genkit({
+      plugins: [googleAI({ apiKey: "AIzaSyBIP6herDQN5BTrQl6uGjijOLsWV8WqZMg" })],
+      model: gemini15Flash,
+    });
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an expert medical lab exam parser. Extract all exam results from the provided document image/PDF.
-            
-For each exam result, identify:
-- name: The exam/test name (e.g., "Hemoglobina", "Glicose", "Colesterol Total")
-- value: The numeric value (as a number)
-- unit: The unit of measurement (e.g., "g/dL", "mg/dL", "U/L")
-- reference_min: Minimum reference value (number or null if not available)
-- reference_max: Maximum reference value (number or null if not available)
-- category: Category like "Hematologia", "Bioquímica", "Hormônios", etc.
-- status: "healthy" if within reference range, "warning" if slightly out, "danger" if significantly out
+    console.log('Calling Genkit/Gemini for extraction...');
 
-Also extract:
-- lab_name: The laboratory name if visible
-- exam_date: The exam date in YYYY-MM-DD format if visible
-
+    const response = await ai.generate({
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert medical lab exam parser. Extract all exam results from the provided document image.
+          
 Return ONLY valid JSON in this exact format:
 {
   "lab_name": "string or null",
@@ -124,48 +108,28 @@ Return ONLY valid JSON in this exact format:
     }
   ]
 }`
-          },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Extract all exam results from this medical lab document. Return only the JSON data, no additional text.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Content}`
-                }
-              }
-            ]
-          }
-        ],
-      }),
+        },
+        {
+          role: 'user',
+          content: [
+            { text: 'Extract all exam results from this medical lab document. Return only the JSON data.' },
+            { media: { url: `data:${mimeType};base64,${base64Content}`, contentType: mimeType } }
+          ]
+        }
+      ],
+      config: {
+        responseMimeType: 'application/json',
+      }
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI API error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please add more credits.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      throw new Error(`AI API error: ${aiResponse.status}`);
-    }
+    const content = response.text;
 
-    const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content;
-    
+    if (!content) {
+      throw new Error('No content in AI response');
+    }
+    // --- FIM DA INTEGRAÇÃO COM GENKIT ---
+
+
     if (!content) {
       throw new Error('No content in AI response');
     }
@@ -208,7 +172,7 @@ Return ONLY valid JSON in this exact format:
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
       // Filter out results with missing required fields and add defaults
-      const validResults = parsedData.results.filter(result => 
+      const validResults = parsedData.results.filter(result =>
         result.name && result.value !== undefined && result.value !== null
       );
 
@@ -228,8 +192,8 @@ Return ONLY valid JSON in this exact format:
       if (examResults.length === 0) {
         console.log('No valid exam results to save');
         return new Response(
-          JSON.stringify({ 
-            success: true, 
+          JSON.stringify({
+            success: true,
             message: 'Exam processed but no valid results found',
             resultsCount: 0
           }),
@@ -284,8 +248,8 @@ Return ONLY valid JSON in this exact format:
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         message: 'Exam processed successfully',
         resultsCount: parsedData.results?.length || 0,
         labName: parsedData.lab_name,
