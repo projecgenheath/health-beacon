@@ -247,6 +247,15 @@
   .sidebar-item-hover {
     @apply hover:bg-primary/5 hover:text-primary transition-all duration-200;
   }
+
+  /* Hide scrollbar for cleaner mobile look */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes fadeIn {
