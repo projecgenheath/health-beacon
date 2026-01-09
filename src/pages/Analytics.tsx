@@ -227,85 +227,85 @@ const Analytics = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card className="animate-slide-up transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Exames</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total de Exames</CardTitle>
+            <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary.totalExams}</div>
-            <p className="text-xs text-muted-foreground">tipos de exames monitorados</p>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold">{summary.totalExams}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">exames monitorados</p>
           </CardContent>
         </Card>
 
         <Card className="animate-slide-up transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.1s' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Saúde</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Taxa de Saúde</CardTitle>
+            <Target className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-500">
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold text-status-healthy">
               {summary.totalExams > 0 ? Math.round((summary.healthy / summary.totalExams) * 100) : 0}%
             </div>
-            <p className="text-xs text-muted-foreground">exames dentro do normal</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">dentro do normal</p>
           </CardContent>
         </Card>
 
         <Card className="animate-slide-up transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.2s' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Exames em Atenção</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Em Atenção</CardTitle>
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-status-warning" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-500">{summary.warning}</div>
-            <p className="text-xs text-muted-foreground">requerem monitoramento</p>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-xl sm:text-2xl font-bold text-status-warning">{summary.warning}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">monitoramento</p>
           </CardContent>
         </Card>
 
         <Card className="animate-slide-up transition-all duration-300 hover:shadow-lg hover:-translate-y-1" style={{ animationDelay: '0.3s' }}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Última Atualização</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium">Atualização</CardTitle>
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-lg font-bold">{summary.lastUpdate || 'N/A'}</div>
-            <p className="text-xs text-muted-foreground">data do último exame</p>
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="text-sm sm:text-lg font-bold truncate">{summary.lastUpdate || 'N/A'}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground">último exame</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Charts */}
       <Tabs defaultValue="trends" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="trends">Tendências</TabsTrigger>
-          <TabsTrigger value="distribution">Distribuição</TabsTrigger>
-          <TabsTrigger value="timeline">Linha do Tempo</TabsTrigger>
-          <TabsTrigger value="details">Detalhes</TabsTrigger>
+        <TabsList className="w-full overflow-x-auto flex sm:grid sm:grid-cols-4 scrollbar-hide">
+          <TabsTrigger value="trends" className="flex-shrink-0 text-xs sm:text-sm">Tendências</TabsTrigger>
+          <TabsTrigger value="distribution" className="flex-shrink-0 text-xs sm:text-sm">Distribuição</TabsTrigger>
+          <TabsTrigger value="timeline" className="flex-shrink-0 text-xs sm:text-sm">Linha do Tempo</TabsTrigger>
+          <TabsTrigger value="details" className="flex-shrink-0 text-xs sm:text-sm">Detalhes</TabsTrigger>
         </TabsList>
 
         {/* Trends Tab */}
         <TabsContent value="trends" className="space-y-4">
           {/* Health Overview with BMI */}
           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+            <CardHeader className="pb-2 sm:pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
                 <div>
-                  <CardTitle>Histórico da Visão Geral da Saúde</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-base sm:text-lg">Histórico da Visão Geral da Saúde</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
                     Acompanhe sua taxa de saúde e IMC ao longo do tempo
                   </CardDescription>
                 </div>
-                <Button onClick={() => setShowBMIDialog(true)} size="sm" variant="outline">
+                <Button onClick={() => setShowBMIDialog(true)} size="sm" variant="outline" className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Atualizar IMC
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
-              <div className="h-[350px]">
+            <CardContent className="px-2 sm:px-6">
+              <div className="h-[280px] sm:h-[350px] -ml-2 sm:ml-0">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={healthOverviewData}>
+                  <LineChart data={healthOverviewData} margin={{ top: 5, right: 5, left: -15, bottom: 5 }}>
                     <defs>
                       <linearGradient id="colorHealth" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="hsl(var(--status-healthy))" stopOpacity={0.3} />
@@ -319,20 +319,23 @@ const Analytics = () => {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis
                       dataKey="dateFormatted"
-                      className="text-xs"
+                      tick={{ fontSize: 10 }}
+                      tickMargin={8}
+                      interval="preserveStartEnd"
                     />
                     <YAxis
                       yAxisId="left"
                       domain={[0, 100]}
-                      className="text-xs"
-                      label={{ value: 'Taxa Saúde (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 10 } }}
+                      tick={{ fontSize: 10 }}
+                      width={35}
+                      tickFormatter={(value) => `${value}%`}
                     />
                     <YAxis
                       yAxisId="right"
                       orientation="right"
                       domain={[15, 40]}
-                      className="text-xs"
-                      label={{ value: 'IMC', angle: 90, position: 'insideRight', style: { textAnchor: 'middle', fontSize: 10 } }}
+                      tick={{ fontSize: 10 }}
+                      width={30}
                     />
                     {/* BMI Reference zones */}
                     <ReferenceArea yAxisId="right" y1={18.5} y2={24.9} fill="hsl(var(--status-healthy))" fillOpacity={0.1} />
@@ -343,7 +346,9 @@ const Analytics = () => {
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
                         border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
+                        borderRadius: '8px',
+                        fontSize: '12px',
+                        padding: '8px 12px'
                       }}
                       formatter={(value: number, name: string) => {
                         if (name === 'Taxa de Saúde') return [`${value}%`, name];
@@ -351,7 +356,10 @@ const Analytics = () => {
                         return [value, name];
                       }}
                     />
-                    <Legend />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                      iconSize={10}
+                    />
                     <Line
                       yAxisId="left"
                       type="monotone"
@@ -359,7 +367,8 @@ const Analytics = () => {
                       name="Taxa de Saúde"
                       stroke="hsl(var(--status-healthy))"
                       strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--status-healthy))', strokeWidth: 2 }}
+                      dot={{ fill: 'hsl(var(--status-healthy))', strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5 }}
                       connectNulls
                     />
                     <Line
@@ -369,7 +378,8 @@ const Analytics = () => {
                       name="IMC"
                       stroke="hsl(var(--primary))"
                       strokeWidth={2}
-                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2 }}
+                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
+                      activeDot={{ r: 5 }}
                       connectNulls
                     />
                   </LineChart>
@@ -377,10 +387,10 @@ const Analytics = () => {
               </div>
 
               {/* BMI Legend */}
-              <div className="mt-4 p-3 rounded-lg bg-muted/50 text-xs text-muted-foreground">
+              <div className="mt-3 sm:mt-4 p-2 sm:p-3 rounded-lg bg-muted/50 text-[10px] sm:text-xs text-muted-foreground">
                 <p className="font-medium mb-1">Referência IMC:</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
-                  <span>• &lt; 18.5: Abaixo do peso</span>
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-x-2 sm:gap-x-4 gap-y-0.5 sm:gap-y-1">
+                  <span>• &lt; 18.5: Abaixo</span>
                   <span className="text-status-healthy">• 18.5 - 24.9: Normal</span>
                   <span>• 25 - 29.9: Sobrepeso</span>
                   <span className="text-status-danger">• ≥ 30: Obesidade</span>
@@ -401,32 +411,32 @@ const Analytics = () => {
                   Suas medições de peso, altura e IMC
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-4 mb-4">
-                  <div className="bg-muted/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">IMC Atual</p>
-                    <p className={`text-2xl font-bold ${bmiStats.current ? getBMICategory(bmiStats.current).status === 'healthy' ? 'text-status-healthy' : bmiStats.current >= 30 ? 'text-status-danger' : 'text-status-warning' : ''}`}>
+              <CardContent className="px-3 sm:px-6">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-4">
+                  <div className="bg-muted/30 rounded-xl p-3 sm:p-4 text-center">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">IMC Atual</p>
+                    <p className={`text-lg sm:text-2xl font-bold ${bmiStats.current ? getBMICategory(bmiStats.current).status === 'healthy' ? 'text-status-healthy' : bmiStats.current >= 30 ? 'text-status-danger' : 'text-status-warning' : ''}`}>
                       {bmiStats.current?.toFixed(1) || '-'}
                     </p>
                     {bmiStats.current && (
-                      <p className="text-xs text-muted-foreground">{getBMICategory(bmiStats.current).label}</p>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{getBMICategory(bmiStats.current).label}</p>
                     )}
                   </div>
-                  <div className="bg-muted/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Média</p>
-                    <p className="text-2xl font-bold">{bmiStats.average?.toFixed(1) || '-'}</p>
+                  <div className="bg-muted/30 rounded-xl p-3 sm:p-4 text-center">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Média</p>
+                    <p className="text-lg sm:text-2xl font-bold">{bmiStats.average?.toFixed(1) || '-'}</p>
                   </div>
-                  <div className="bg-muted/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Mínimo</p>
-                    <p className="text-2xl font-bold">{bmiStats.min?.toFixed(1) || '-'}</p>
+                  <div className="bg-muted/30 rounded-xl p-3 sm:p-4 text-center">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Mínimo</p>
+                    <p className="text-lg sm:text-2xl font-bold">{bmiStats.min?.toFixed(1) || '-'}</p>
                   </div>
-                  <div className="bg-muted/30 rounded-xl p-4 text-center">
-                    <p className="text-xs text-muted-foreground mb-1">Variação</p>
+                  <div className="bg-muted/30 rounded-xl p-3 sm:p-4 text-center">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">Variação</p>
                     <div className="flex items-center justify-center gap-1">
-                      {bmiStats.trend === 'up' && <TrendingUp className="h-4 w-4 text-status-warning" />}
-                      {bmiStats.trend === 'down' && <TrendingDown className="h-4 w-4 text-status-healthy" />}
-                      {bmiStats.trend === 'stable' && <Minus className="h-4 w-4 text-muted-foreground" />}
-                      <p className="text-2xl font-bold">
+                      {bmiStats.trend === 'up' && <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-status-warning" />}
+                      {bmiStats.trend === 'down' && <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-status-healthy" />}
+                      {bmiStats.trend === 'stable' && <Minus className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />}
+                      <p className="text-lg sm:text-2xl font-bold">
                         {bmiStats.change !== null ? `${bmiStats.change > 0 ? '+' : ''}${bmiStats.change.toFixed(1)}%` : '-'}
                       </p>
                     </div>
