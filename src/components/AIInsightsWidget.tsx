@@ -1,4 +1,4 @@
-import { ExamsList } from '@/types/exam';
+import { ExamResult } from '@/types/exam';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Brain, Sparkles, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';

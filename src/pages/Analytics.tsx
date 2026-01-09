@@ -65,7 +65,7 @@ const Analytics = () => {
     const dateMap = new Map<string, {
       date: string;
       dateFormatted: string;
-      healthScore: number;
+      healthScore: number | null;
       bmi: number | null;
       totalExams: number;
       healthyExams: number;
@@ -78,7 +78,7 @@ const Analytics = () => {
           dateMap.set(item.date, {
             date: item.date,
             dateFormatted: format(parseISO(item.date), 'dd/MM', { locale: ptBR }),
-            healthScore: 0,
+            healthScore: null,
             bmi: null,
             totalExams: 0,
             healthyExams: 0,
@@ -100,7 +100,7 @@ const Analytics = () => {
         dateMap.set(item.recorded_at, {
           date: item.recorded_at,
           dateFormatted: format(parseISO(item.recorded_at), 'dd/MM', { locale: ptBR }),
-          healthScore: 0,
+          healthScore: null,
           bmi: item.bmi,
           totalExams: 0,
           healthyExams: 0,
@@ -108,10 +108,33 @@ const Analytics = () => {
       }
     });
 
-    return Array.from(dateMap.values())
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .slice(-20);
-  }, [histories, bmiHistory]);
+    // Sort by date and fill in missing health scores with last known value
+    const sortedData = Array.from(dateMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date));
+    
+    // Forward-fill health scores: carry the last known health score to dates without exams
+    let lastKnownHealthScore: number | null = null;
+    sortedData.forEach(entry => {
+      if (entry.healthScore !== null) {
+        lastKnownHealthScore = entry.healthScore;
+      } else if (lastKnownHealthScore !== null) {
+        entry.healthScore = lastKnownHealthScore;
+      }
+    });
+
+    // If we still have null values at the beginning, use the current summary health score
+    const currentHealthScore = summary.totalExams > 0 
+      ? Math.round((summary.healthy / summary.totalExams) * 100) 
+      : null;
+    
+    sortedData.forEach(entry => {
+      if (entry.healthScore === null && currentHealthScore !== null) {
+        entry.healthScore = currentHealthScore;
+      }
+    });
+
+    return sortedData.slice(-20);
+  }, [histories, bmiHistory, summary]);
 
   // Status distribution for pie chart
   const statusDistribution = useMemo(() => [
