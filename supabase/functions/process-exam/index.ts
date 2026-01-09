@@ -51,6 +51,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.error('Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -65,6 +66,7 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
+      console.error('Unauthorized user:', userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -74,45 +76,45 @@ serve(async (req) => {
     const { fileUrl, fileName, examId } = await req.json();
 
     if (!fileUrl || !examId) {
+      console.error('Missing required fields:', { fileUrl, examId });
       return new Response(
         JSON.stringify({ error: 'Missing required fields: fileUrl, examId' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Processing exam: ${fileName} for user: ${user.id}`);
+    console.log(`Processing exam: ${fileName} (ID: ${examId}) for user: ${user.id}`);
 
     // Fetch the file content
+    console.log(`Fetching file from: ${fileUrl}`);
     const fileResponse = await fetch(fileUrl, {
       headers: { Authorization: authHeader }
     });
 
     if (!fileResponse.ok) {
-      throw new Error('Failed to fetch file');
+      const errorText = await fileResponse.text();
+      console.error(`Failed to fetch file: ${fileResponse.status}`, errorText);
+      throw new Error(`Failed to fetch file from storage: ${fileResponse.status}`);
     }
 
     const fileBlob = await fileResponse.blob();
     const base64Content = await blobToBase64(fileBlob);
     const mimeType = fileBlob.type || 'application/pdf';
 
-    // --- INÍCIO DA NOVA INTEGRAÇÃO COM GENKIT ---
-    const { genkit } = await import("npm:genkit@0.5.15");
-    const { googleAI, gemini15Flash } = await import("npm:@genkit-ai/googleai@0.5.15");
+    console.log(`File converted to Base64 (${base64Content.length} bytes), MimeType: ${mimeType}`);
 
-    // Configure a Genkit instance
-    const ai = genkit({
-      plugins: [googleAI({ apiKey: Deno.env.get('GOOGLE_AI_API_KEY') })],
-      model: gemini15Flash,
-    });
+    // --- DIRECT GEMINI API CALL ---
+    let googleAIKey = Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!googleAIKey) {
+      googleAIKey = 'AIzaSyBIP6herDQN5BTrQl6uGjijOLsWV8WqZMg';
+    }
 
-    console.log('Calling Genkit/Gemini for extraction...');
+    console.log('Calling Gemini API for extraction...');
 
-    const response = await ai.generate({
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert medical lab exam parser. Extract all exam results from the provided document image.
-          
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleAIKey}`;
+
+    const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
+    
 Return ONLY valid JSON in this exact format, with no extra text or markdown:
 {
   "lab_name": "string or null",
@@ -132,35 +134,49 @@ Return ONLY valid JSON in this exact format, with no extra text or markdown:
 
 IMPORTANT:
 1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
-2. For exam names, use a consistent name if possible.
-3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.`
+2. For exam names, use a consistent name if possible (e.g., "Glicose", "Colesterol Total").
+3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.`;
+
+    const geminiResponse = await fetch(geminiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Content,
+                },
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          responseMimeType: "application/json",
         },
-        {
-          role: 'user',
-          content: [
-            { text: 'Extract all exam results from this medical lab document. Return only the JSON data.' },
-            { media: { url: `data:${mimeType};base64,${base64Content}`, contentType: mimeType } }
-          ]
-        }
-      ],
-      config: {
-        responseMimeType: 'application/json',
-      }
+      }),
     });
 
-    const content = response.text;
-
-    if (!content) {
-      throw new Error('No content in AI response');
-    }
-    // --- FIM DA INTEGRAÇÃO COM GENKIT ---
-
-
-    if (!content) {
-      throw new Error('No content in AI response');
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`Gemini API error: ${geminiResponse.status}`, errorText);
+      throw new Error(`AI extraction failed: ${geminiResponse.status}`);
     }
 
-    console.log('AI response received, parsing...');
+    const geminiResult = await geminiResponse.json();
+    const content = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!content) {
+      console.error('Empty response from Gemini:', JSON.stringify(geminiResult));
+      throw new Error('No content in AI response');
+    }
+
+    console.log('AI response received, parsing JSON...');
 
     // Parse the JSON response from AI
     let parsedData: ParsedExamData;
@@ -169,7 +185,7 @@ IMPORTANT:
       const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
       parsedData = JSON.parse(cleanContent);
     } catch (parseError) {
-      console.error('Failed to parse AI response:', content);
+      console.error('Failed to parse AI JSON response:', content);
       throw new Error('Failed to parse exam data from AI response');
     }
 
@@ -180,6 +196,7 @@ IMPORTANT:
     );
 
     // Update the exam record with extracted info
+    console.log('Updating exam record in database...');
     const { error: updateError } = await supabaseAdmin
       .from('exams')
       .update({
@@ -191,12 +208,13 @@ IMPORTANT:
       .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Failed to update exam:', updateError);
+      console.error('Failed to update exam table:', updateError);
       throw new Error('Failed to update exam record');
     }
 
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
+      console.log(`Preparing to insert ${parsedData.results.length} results...`);
       // Filter out results with missing required fields and add defaults
       const validResults = parsedData.results.filter(result =>
         result.name && result.value !== undefined && result.value !== null
@@ -232,7 +250,7 @@ IMPORTANT:
         .insert(examResults);
 
       if (insertError) {
-        console.error('Failed to insert exam results:', insertError);
+        console.error('Failed to insert results into exam_results table:', insertError);
         throw new Error('Failed to save exam results');
       }
 
@@ -241,7 +259,7 @@ IMPORTANT:
       // Check for warning or danger results and send email alerts
       const alertResults = parsedData.results.filter(r => r.status === 'warning' || r.status === 'danger');
       if (alertResults.length > 0) {
-        console.log(`Found ${alertResults.length} results requiring attention, sending email alert...`);
+        console.log(`Found ${alertResults.length} results requiring attention, sending alerts...`);
         try {
           const alertResponse = await fetch(
             `${Deno.env.get('SUPABASE_URL')}/functions/v1/send-exam-alerts`,
@@ -267,8 +285,7 @@ IMPORTANT:
           const alertData = await alertResponse.json();
           console.log('Email alert response:', alertData);
         } catch (emailError) {
-          console.error('Failed to send email alert:', emailError);
-          // Don't fail the whole request if email fails
+          console.error('Failed to call send-exam-alerts function:', emailError);
         }
       }
     }
@@ -285,7 +302,7 @@ IMPORTANT:
     );
 
   } catch (error) {
-    console.error('Error processing exam:', error);
+    console.error('Critical Error in process-exam:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

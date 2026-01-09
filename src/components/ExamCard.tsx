@@ -79,24 +79,53 @@ export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, file
     e.stopPropagation();
     setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('exam_results')
-        .delete()
-        .eq('id', exam.id);
+      if (examId) {
+        // If we have an examId (from the exams table), delete the parent record
+        // This will cascade to all related exam_results
 
-      if (error) throw error;
+        // First, optionally delete the file from storage if fileUrl is present
+        if (fileUrl) {
+          const { error: storageError } = await supabase.storage
+            .from('exam-files')
+            .remove([fileUrl]);
 
-      toast({
-        title: 'Exame excluído',
-        description: `O resultado de ${exam.name} foi removido com sucesso.`,
-      });
+          if (storageError) {
+            console.error('Error deleting file from storage:', storageError);
+          }
+        }
+
+        const { error: dbError } = await supabase
+          .from('exams')
+          .delete()
+          .eq('id', examId);
+
+        if (dbError) throw dbError;
+
+        toast({
+          title: 'Exame excluído',
+          description: `O upload de ${fileName || exam.name} e todos os seus resultados foram removidos.`,
+        });
+      } else {
+        // Fallback: only delete this specific result if no examId is provided
+        const { error } = await supabase
+          .from('exam_results')
+          .delete()
+          .eq('id', exam.id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Resultado excluído',
+          description: `O resultado de ${exam.name} foi removido com sucesso.`,
+        });
+      }
 
       onDelete?.();
     } catch (error) {
       console.error('Error deleting exam:', error);
       toast({
         title: 'Erro ao excluir',
-        description: 'Não foi possível excluir o resultado do exame.',
+        description: 'Não foi possível excluir o exame.',
         variant: 'destructive',
       });
     } finally {
@@ -192,7 +221,7 @@ export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, file
                 <AlertDialogHeader>
                   <AlertDialogTitle>Excluir resultado?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tem certeza que deseja excluir o resultado de <strong>{exam.name}</strong>? 
+                    Tem certeza que deseja excluir o resultado de <strong>{exam.name}</strong>?
                     Esta ação não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>

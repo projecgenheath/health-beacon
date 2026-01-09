@@ -12,7 +12,8 @@ import {
   RefreshCw,
   Eye,
   ChevronDown,
-  History
+  History,
+  Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -54,6 +55,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
 
   const fetchUploads = async () => {
     if (!user) return;
+    console.log('Fetching uploads for user:', user.id);
 
     try {
       const { data, error } = await supabase
@@ -64,6 +66,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
         .limit(20);
 
       if (error) throw error;
+      console.log('Uploads fetched successfully:', data?.length);
       setUploads(data || []);
     } catch (error) {
       console.error('Error fetching uploads:', error);
@@ -72,7 +75,11 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     }
   };
 
-  const handleReprocess = async (exam: ExamUpload) => {
+  const handleReprocess = async (e: React.MouseEvent, exam: ExamUpload) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) return;
     if (!exam.file_url) {
       toast({
         title: 'Erro',
@@ -85,50 +92,44 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     setReprocessingId(exam.id);
 
     try {
+      toast({
+        title: 'Reprocessando...',
+        description: `O exame ${exam.file_name} está sendo reprocessado.`,
+      });
+      console.log('Reprocessing exam:', exam.id);
+
       const { data: signedUrlData, error: signedUrlError } = await supabase.storage
         .from('exam-files')
         .createSignedUrl(exam.file_url, 3600);
 
       if (signedUrlError || !signedUrlData?.signedUrl) {
-        throw new Error('Erro ao obter URL do arquivo');
+        throw new Error('Erro ao obter URL do arquivo para reprocessamento.');
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: result, error: functionError } = await supabase.functions.invoke('process-exam', {
+        body: {
+          fileUrl: signedUrlData.signedUrl,
+          fileName: exam.file_name,
+          examId: exam.id,
+        },
+      });
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-exam`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            fileUrl: signedUrlData.signedUrl,
-            fileName: exam.file_name,
-            examId: exam.id,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Falha ao reprocessar');
+      if (functionError) {
+        throw new Error(functionError.message || 'Falha ao reprocessar o exame.');
       }
 
       toast({
         title: 'Reprocessado!',
-        description: 'O exame foi reprocessado com sucesso',
+        description: 'O exame foi reprocessado com sucesso.',
       });
 
       await fetchUploads();
       onReprocess?.();
     } catch (error) {
-      console.error('Error reprocessing:', error);
+      console.error('Error reprocessing exam:', error);
       toast({
         title: 'Erro ao reprocessar',
-        description: error instanceof Error ? error.message : 'Tente novamente',
+        description: error instanceof Error ? error.message : 'Não foi possível reprocessar o exame. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
@@ -136,7 +137,71 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     }
   };
 
+  const handleDelete = async (e: React.MouseEvent, exam: ExamUpload) => {
+    e.preventDefault();
+    e.stopPropagation();
 
+    if (!user) {
+      toast({
+        title: 'Erro de autenticação',
+        description: 'Você precisa estar logado para excluir exames.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const shouldConfirm = (window as any).__SKIP_CONFIRM__ || window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.');
+
+    if (shouldConfirm) {
+      try {
+        console.log('Attempting to delete exam:', exam.id);
+        setLoading(true);
+
+        // 1. Delete file from storage if it exists
+        if (exam.file_url) {
+          console.log('Deleting file from storage:', exam.file_url);
+          const { error: storageError } = await supabase.storage
+            .from('exam-files')
+            .remove([exam.file_url]);
+
+          if (storageError) {
+            console.error('Error deleting file from storage:', storageError);
+            // We continue anyway to try and delete the database record
+          }
+        }
+
+        // 2. Delete from database
+        console.log('Deleting record from database:', exam.id);
+        const { error: dbError } = await supabase
+          .from('exams')
+          .delete()
+          .eq('id', exam.id);
+
+        if (dbError) {
+          console.error('Database delete error:', dbError);
+          throw dbError;
+        }
+
+        toast({
+          title: 'Exame excluído',
+          description: 'O upload e seus resultados foram removidos.',
+        });
+
+        console.log('Deletion successful. Refreshing list...');
+        await fetchUploads();
+        onReprocess?.();
+      } catch (error) {
+        console.error('Detailed deletion error:', error);
+        toast({
+          title: 'Erro ao excluir',
+          description: error instanceof Error ? error.message : 'Não foi possível remover o exame.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
 
   const getStatusIcon = (processed: boolean | null) => {
     if (processed === true) {
@@ -225,10 +290,15 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                 <div className="flex items-center gap-2">
                   {upload.file_url && (
                     <Button
+                      type="button"
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      onClick={() => setViewingExam(upload)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setViewingExam(upload);
+                      }}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -236,9 +306,10 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
 
                   {upload.processed === false && (
                     <Button
+                      type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => handleReprocess(upload)}
+                      onClick={(e) => handleReprocess(e, upload)}
                       disabled={reprocessingId === upload.id}
                       className="h-8"
                     >
@@ -249,6 +320,22 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                       {reprocessingId === upload.id ? 'Processando...' : 'Reprocessar'}
                     </Button>
                   )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.')) {
+                        handleDelete(e, upload);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             ))}

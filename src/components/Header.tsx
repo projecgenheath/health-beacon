@@ -30,52 +30,19 @@ export const Header = () => {
     setTheme(isDark ? 'light' : 'dark');
   };
 
-  const navItems = [
-    { path: '/', label: 'Dashboard', icon: Activity },
-    { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-    { path: '/compare', label: 'Comparar', icon: GitCompare },
-  ];
+  // Removed navItems as they are now in the Sidebar
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/50 animate-slide-down">
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-6">
-          {/* Logo */}
-          <button 
-            onClick={() => navigate('/')}
-            className="flex items-center gap-3 group transition-smooth"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary shadow-glow-primary group-hover:scale-105 transition-spring">
-              <Activity className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-foreground">MeuExame</h1>
-              <p className="text-xs text-muted-foreground">Acompanhe sua saúde</p>
-            </div>
-          </button>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.path}
-                  onClick={() => navigate(item.path)}
-                  className={cn(
-                    "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-smooth btn-press",
-                    isActive 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+        <div className="flex items-center gap-4">
+          {/* Dashboard Title or Context */}
+          <h2 className="text-sm font-semibold text-muted-foreground hidden md:block uppercase tracking-wider">
+            {location.pathname === '/' ? 'Visão Geral' :
+              location.pathname === '/analytics' ? 'Análise de Saúde' :
+                location.pathname === '/compare' ? 'Comparação de Exames' :
+                  location.pathname === '/profile' ? 'Perfil do Usuário' : ''}
+          </h2>
         </div>
 
         <div className="flex items-center gap-2">

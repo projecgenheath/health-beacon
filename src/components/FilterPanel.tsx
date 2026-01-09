@@ -47,7 +47,7 @@ export const FilterPanel = ({
     const statuses = [
         { value: 'healthy', label: 'Normal', color: 'bg-status-healthy' },
         { value: 'warning', label: 'Atenção', color: 'bg-status-warning' },
-        { value: 'danger', label: 'Crítico', color: 'bg-status-danger' },
+        { value: 'danger', label: 'Alterado', color: 'bg-status-danger' },
     ];
 
     return (

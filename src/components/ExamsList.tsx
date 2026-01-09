@@ -11,9 +11,21 @@ interface ExamsListProps {
   exams: ExamResult[];
   histories: ExamHistory[];
   onExamDeleted?: () => void;
+  filterProps?: {
+    filters: any;
+    filteredData: ExamResult[];
+    stats: any;
+    setSearchTerm: (term: string) => void;
+    setDateRange: (start: string | null, end: string | null) => void;
+    toggleStatus: (status: string) => void;
+    toggleCategory: (category: string) => void;
+    toggleLab: (lab: string) => void;
+    setSorting: (sortBy: any, sortOrder: any) => void;
+    resetFilters: () => void;
+  };
 }
 
-export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) => {
+export const ExamsList = ({ exams, histories, onExamDeleted, filterProps }: ExamsListProps) => {
   // Extrair categorias e labs únicos dos exames
   const availableCategories = useMemo(() => {
     const categories = new Set(exams.map(e => e.category).filter(Boolean));
@@ -22,7 +34,14 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
 
   const availableLabs: string[] = [];
 
-  // Usar o hook de busca e filtros
+  // Usar os filtros passados via props ou inicializar hook local se não houver (fallback)
+  const localFilters = useSearchAndFilter(exams as unknown as Record<string, unknown>[], {
+    searchFields: ['name', 'category'],
+    dateField: 'date',
+    statusField: 'status',
+    categoryField: 'category',
+  });
+
   const {
     filters,
     filteredData,
@@ -34,12 +53,7 @@ export const ExamsList = ({ exams, histories, onExamDeleted }: ExamsListProps) =
     toggleLab,
     setSorting,
     resetFilters,
-  } = useSearchAndFilter(exams as unknown as Record<string, unknown>[], {
-    searchFields: ['name', 'category'],
-    dateField: 'date',
-    statusField: 'status',
-    categoryField: 'category',
-  });
+  } = filterProps || localFilters;
 
   const filteredExams = filteredData as unknown as ExamResult[];
 

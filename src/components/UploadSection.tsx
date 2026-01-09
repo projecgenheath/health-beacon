@@ -207,32 +207,16 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         setCurrentStep('analyzing');
         setOverallProgress(baseProgress + fileProgressWeight * 0.5);
 
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: result, error: functionError } = await supabase.functions.invoke('process-exam', {
+          body: {
+            fileUrl: signedUrlData.signedUrl,
+            fileName: file.name,
+            examId: examData.id,
+          },
+        });
 
-        const response = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-exam`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.access_token}`,
-            },
-            body: JSON.stringify({
-              fileUrl: signedUrlData.signedUrl,
-              fileName: file.name,
-              examId: examData.id,
-            }),
-          }
-        );
-
-        updateFileStatus(i, { progress: 75 });
-        setCurrentStep('extracting');
-        setOverallProgress(baseProgress + fileProgressWeight * 0.75);
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || 'Falha ao processar o exame');
+        if (functionError) {
+          throw new Error(functionError.message || 'Falha ao processar o exame');
         }
 
         // Step 5: Complete
@@ -261,13 +245,13 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         description: `${successCount} exame(s) processado(s) com sucesso`,
       });
       onUploadComplete?.();
-      
+
       // Sync health goals with new exam data
       await syncGoals();
-      
+
       // Show BMI update dialog
       setShowBMIDialog(true);
-      
+
       // Remove successful files after a delay
       setTimeout(() => {
         setFiles((prev) => prev.filter((f) => f.status !== 'success'));
@@ -315,7 +299,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   return (
     <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '100ms' }}>
       <h2 className="text-lg font-semibold text-foreground mb-4">Upload de Exames</h2>
-      
+
       {/* Drop zone */}
       <div
         onDragOver={handleDragOver}
@@ -337,7 +321,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={isProcessing}
         />
-        
+
         <div className="flex flex-col items-center gap-3">
           <div className={cn(
             'h-14 w-14 rounded-xl flex items-center justify-center transition-colors',
@@ -364,10 +348,10 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         )}>
           <FileText className="h-5 w-5" />
           <span className="font-medium">Selecionar PDF</span>
-          <input 
-            type="file" 
-            accept=".pdf" 
-            className="hidden" 
+          <input
+            type="file"
+            accept=".pdf"
+            className="hidden"
             onChange={handleFileInput}
             disabled={isProcessing}
           />
@@ -400,7 +384,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           <p className="text-sm font-medium text-foreground">
             Arquivos selecionados ({files.length}):
           </p>
-          
+
           <div className="grid gap-3">
             {files.map((fileData, index) => (
               <div
@@ -445,7 +429,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
                       {fileData.error || getStatusText(fileData.status) || `${(fileData.file.size / 1024).toFixed(1)} KB`}
                     </span>
                   </div>
-                  
+
                   {/* Progress bar for active files */}
                   {(fileData.status === 'uploading' || fileData.status === 'processing') && (
                     <Progress value={fileData.progress} className="h-1 mt-2" />

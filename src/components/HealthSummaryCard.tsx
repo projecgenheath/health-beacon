@@ -6,12 +6,14 @@ import { cn } from '@/lib/utils';
 
 interface HealthSummaryCardProps {
   summary: HealthSummary;
+  onStatusClick?: (status: string) => void;
+  activeStatuses?: string[];
 }
 
-export const HealthSummaryCard = ({ summary }: HealthSummaryCardProps) => {
+export const HealthSummaryCard = ({ summary, onStatusClick, activeStatuses = [] }: HealthSummaryCardProps) => {
   const navigate = useNavigate();
   const healthPercentage = summary.totalExams > 0 ? Math.round((summary.healthy / summary.totalExams) * 100) : 0;
-  
+
   const getHealthMessage = () => {
     if (healthPercentage >= 90) return { text: 'Excelente!', emoji: '🎉' };
     if (healthPercentage >= 70) return { text: 'Muito bom!', emoji: '😊' };
@@ -20,14 +22,14 @@ export const HealthSummaryCard = ({ summary }: HealthSummaryCardProps) => {
   };
 
   const healthMessage = getHealthMessage();
-  
+
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-card p-6 shadow-md animate-slide-up hover-lift">
+    <div className="relative overflow-hidden rounded-2xl p-6 animate-slide-up hover-lift glass-card border-none">
       {/* Animated background decorations */}
-      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/10 blur-2xl animate-pulse-slow" />
-      <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-status-healthy/10 blur-2xl animate-float" />
+      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/20 blur-3xl animate-pulse-slow" />
+      <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-status-healthy/20 blur-3xl animate-float" />
       <div className="absolute top-1/2 right-4 h-16 w-16 rounded-full bg-accent/20 blur-xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
-      
+
       <div className="relative">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl gradient-primary text-primary-foreground shadow-glow-primary transition-spring hover:scale-105">
@@ -85,30 +87,44 @@ export const HealthSummaryCard = ({ summary }: HealthSummaryCardProps) => {
 
         {/* Status Summary */}
         <div className="grid grid-cols-3 gap-3">
-          <div className={cn(
-            "flex flex-col items-center rounded-xl bg-status-healthy-bg p-3 card-interactive stagger-1",
-            summary.healthy > 0 && "shadow-glow-healthy/30"
-          )}>
+          <button
+            onClick={() => onStatusClick?.('healthy')}
+            className={cn(
+              "flex flex-col items-center rounded-xl bg-status-healthy-bg p-3 card-interactive stagger-1 transition-all border-2 border-transparent",
+              summary.healthy > 0 && "shadow-glow-healthy/30",
+              activeStatuses.includes('healthy') && "border-status-healthy bg-status-healthy/10"
+            )}
+          >
             <CheckCircle2 className="h-5 w-5 text-status-healthy mb-1" />
             <span className="text-2xl font-bold text-status-healthy">{summary.healthy}</span>
             <span className="text-xs text-muted-foreground">Normal</span>
-          </div>
-          <div className={cn(
-            "flex flex-col items-center rounded-xl bg-status-warning-bg p-3 card-interactive stagger-2",
-            summary.warning > 0 && "shadow-glow-warning/30"
-          )}>
+          </button>
+
+          <button
+            onClick={() => onStatusClick?.('warning')}
+            className={cn(
+              "flex flex-col items-center rounded-xl bg-status-warning-bg p-3 card-interactive stagger-2 transition-all border-2 border-transparent",
+              summary.warning > 0 && "shadow-glow-warning/30",
+              activeStatuses.includes('warning') && "border-status-warning bg-status-warning/10"
+            )}
+          >
             <AlertTriangle className="h-5 w-5 text-status-warning mb-1" />
             <span className="text-2xl font-bold text-status-warning">{summary.warning}</span>
             <span className="text-xs text-muted-foreground">Atenção</span>
-          </div>
-          <div className={cn(
-            "flex flex-col items-center rounded-xl bg-status-danger-bg p-3 card-interactive stagger-3",
-            summary.danger > 0 && "shadow-glow-danger/30"
-          )}>
+          </button>
+
+          <button
+            onClick={() => onStatusClick?.('danger')}
+            className={cn(
+              "flex flex-col items-center rounded-xl bg-status-danger-bg p-3 card-interactive stagger-3 transition-all border-2 border-transparent",
+              summary.danger > 0 && "shadow-glow-danger/30",
+              activeStatuses.includes('danger') && "border-status-danger bg-status-danger/10"
+            )}
+          >
             <AlertCircle className="h-5 w-5 text-status-danger mb-1" />
             <span className="text-2xl font-bold text-status-danger">{summary.danger}</span>
             <span className="text-xs text-muted-foreground">Alterado</span>
-          </div>
+          </button>
         </div>
 
         {summary.totalExams > 0 && (
