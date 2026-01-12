@@ -69,7 +69,7 @@ const Index = () => {
           onExamDeleted={refetch}
           filterProps={{
             filters,
-            filteredData: filteredData as unknown as any[],
+            filteredData: filteredData as typeof exams,
             stats,
             setSearchTerm,
             setDateRange,

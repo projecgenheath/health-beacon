@@ -150,7 +150,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
       return;
     }
 
-    const shouldConfirm = (window as any).__SKIP_CONFIRM__ || window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.');
+    const shouldConfirm = (window as unknown as { __SKIP_CONFIRM__?: boolean }).__SKIP_CONFIRM__ || window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.');
 
     if (shouldConfirm) {
       try {

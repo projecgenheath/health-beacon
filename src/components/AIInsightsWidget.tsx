@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface AIInsightsWidgetProps {
-    exams: any[];
+    exams: ExamResult[];
 }
 
 export const AIInsightsWidget = ({ exams }: AIInsightsWidgetProps) => {

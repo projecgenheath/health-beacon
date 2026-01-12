@@ -4,7 +4,7 @@ import { ExamCard } from './ExamCard';
 import { SearchBar } from './SearchBar';
 import { FilterPanel } from './FilterPanel';
 import { ActiveFilters } from './ActiveFilters';
-import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
+import { useSearchAndFilter, FilterConfig } from '@/hooks/useSearchAndFilter';
 import { FileQuestion } from 'lucide-react';
 
 interface ExamsListProps {
@@ -12,15 +12,15 @@ interface ExamsListProps {
   histories: ExamHistory[];
   onExamDeleted?: () => void;
   filterProps?: {
-    filters: any;
+    filters: FilterConfig;
     filteredData: ExamResult[];
-    stats: any;
+    stats: { total: number; filtered: number; hasActiveFilters: boolean };
     setSearchTerm: (term: string) => void;
     setDateRange: (start: string | null, end: string | null) => void;
     toggleStatus: (status: string) => void;
     toggleCategory: (category: string) => void;
     toggleLab: (lab: string) => void;
-    setSorting: (sortBy: any, sortOrder: any) => void;
+    setSorting: (sortBy: FilterConfig['sortBy'], sortOrder: FilterConfig['sortOrder']) => void;
     resetFilters: () => void;
   };
 }

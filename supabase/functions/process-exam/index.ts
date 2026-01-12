@@ -33,7 +33,7 @@ function normalizeExamName(name: string): string {
     .trim();
 }
 
-function parseLocaleNumber(value: any): number {
+function parseLocaleNumber(value: string | number): number {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') return 0;
 
@@ -43,7 +43,7 @@ function parseLocaleNumber(value: any): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

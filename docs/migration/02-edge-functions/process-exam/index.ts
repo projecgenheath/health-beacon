@@ -42,7 +42,7 @@ function normalizeExamName(name: string): string {
     .trim();
 }
 
-function parseLocaleNumber(value: any): number {
+function parseLocaleNumber(value: string | number): number {
   if (typeof value === 'number') return value;
   if (typeof value !== 'string') return 0;
   const normalizedValue = value.replace(',', '.').replace(/[^\d.-]/g, '');
@@ -50,7 +50,7 @@ function parseLocaleNumber(value: any): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -117,7 +117,7 @@ serve(async (req) => {
     // IMPORTANTE: Substitua pela sua própria API key do Google AI Studio
     // Crie em: https://aistudio.google.com/app/apikey
     const googleAIKey = Deno.env.get('GOOGLE_AI_API_KEY') ?? '';
-    
+
     if (!googleAIKey) {
       throw new Error('GOOGLE_AI_API_KEY not configured');
     }
@@ -212,7 +212,7 @@ IMPORTANT:
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
       console.log(`Preparing to insert ${parsedData.results.length} results...`);
-      
+
       const validResults = parsedData.results.filter(result =>
         result.name && result.value !== undefined && result.value !== null
       );
