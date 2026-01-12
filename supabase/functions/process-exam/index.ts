@@ -159,9 +159,6 @@ IMPORTANT:
             ],
           },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-        },
       }),
     });
 
