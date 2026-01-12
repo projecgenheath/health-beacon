@@ -26,7 +26,7 @@ const Index = () => {
     toggleLab,
     setSorting,
     resetFilters,
-  } = useSearchAndFilter(exams as unknown as Record<string, unknown>[], {
+  } = useSearchAndFilter(exams, {
     searchFields: ['name', 'category'],
     dateField: 'date',
     statusField: 'status',
@@ -69,7 +69,7 @@ const Index = () => {
           onExamDeleted={refetch}
           filterProps={{
             filters,
-            filteredData: filteredData as typeof exams,
+            filteredData,
             stats,
             setSearchTerm,
             setDateRange,
