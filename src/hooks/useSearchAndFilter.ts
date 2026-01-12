@@ -30,7 +30,8 @@ export const defaultFilters: FilterConfig = {
  * Hook para gerenciar estado de busca e filtros
  * Retorna funções para atualizar filtros e dados filtrados
  */
-export function useSearchAndFilter<T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useSearchAndFilter<T extends Record<string, any>>(
     data: T[],
     options: {
         searchFields: (keyof T)[];
