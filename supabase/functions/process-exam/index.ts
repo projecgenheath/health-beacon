@@ -114,6 +114,31 @@ serve(async (req: Request) => {
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b:generateContent?key=${googleAIKey}`;
     console.log(`Using model: gemma-3-27b`);
 
+    const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
+    
+Return ONLY valid JSON in this exact format, with no extra text or markdown:
+{
+  "lab_name": "string or null",
+  "exam_date": "YYYY-MM-DD or null",
+  "results": [
+    {
+      "name": "string",
+      "value": number,
+      "unit": "string",
+      "reference_min": number or null,
+      "reference_max": number or null,
+      "category": "string",
+      "status": "healthy" | "warning" | "danger"
+    }
+  ]
+}
+
+IMPORTANT:
+1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
+2. For exam names, use a consistent name if possible (e.g., "Glicose", "Colesterol Total").
+3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.
+4. Determine status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out.`;
+
     // Use Google AI Direct API
     const geminiResponse = await fetch(geminiUrl, {
       method: "POST",
