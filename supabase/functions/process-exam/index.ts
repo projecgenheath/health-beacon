@@ -103,15 +103,13 @@ serve(async (req: Request) => {
 
     console.log(`File converted to Base64 (${base64Content.length} bytes), MimeType: ${mimeType}`);
 
-    // --- DIRECT GEMINI API CALL ---
-    const googleAIKey = Deno.env.get('GOOGLE_AI_API_KEY');
-    if (!googleAIKey) {
-      throw new Error('GOOGLE_AI_API_KEY environment variable is not set');
+    // --- LOVABLE AI GATEWAY ---
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY environment variable is not set');
     }
 
-    console.log('Calling Gemini API for extraction...');
-
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${googleAIKey}`;
+    console.log('Calling Lovable AI Gateway (Gemini 2.5 Flash) for extraction...');
 
     const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
     
@@ -135,44 +133,47 @@ Return ONLY valid JSON in this exact format, with no extra text or markdown:
 IMPORTANT:
 1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
 2. For exam names, use a consistent name if possible (e.g., "Glicose", "Colesterol Total").
-3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.`;
+3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.
+4. Determine status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out.`;
 
-    const geminiResponse = await fetch(geminiUrl, {
-      method: "POST",
+    // Use Lovable AI Gateway
+    const aiResponse = await fetch('https://ai-gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        contents: [
+        model: 'google/gemini-2.5-flash',
+        messages: [
           {
-            parts: [
-              { text: prompt },
+            role: 'user',
+            content: [
+              { type: 'text', text: prompt },
               {
-                inlineData: {
-                  mimeType: mimeType,
-                  data: base64Content,
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Content}`,
                 },
               },
             ],
           },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-        },
+        response_format: { type: 'json_object' },
       }),
     });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error(`Gemini API error: ${geminiResponse.status}`, errorText);
-      throw new Error(`AI extraction failed: ${geminiResponse.status}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error(`Lovable AI Gateway error: ${aiResponse.status}`, errorText);
+      throw new Error(`AI extraction failed: ${aiResponse.status} - ${errorText}`);
     }
 
-    const geminiResult = await geminiResponse.json();
-    const content = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
+    const aiResult = await aiResponse.json();
+    const content = aiResult.choices?.[0]?.message?.content;
 
     if (!content) {
-      console.error('Empty response from Gemini:', JSON.stringify(geminiResult));
+      console.error('Empty response from AI:', JSON.stringify(aiResult));
       throw new Error('No content in AI response');
     }
 
