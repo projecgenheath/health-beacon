@@ -1,4 +1,4 @@
-project_id = "cwhoepbevbbxxmylvxnl"
+project_id = "nufifxcjujpjipoocvaz"
 
 [functions.process-exam]
 verify_jwt = false
@@ -9,5 +9,4 @@ verify_jwt = false
 [functions.send-digest]
 verify_jwt = false
 
-[functions.send-exam-alerts]
-verify_jwt = false
+

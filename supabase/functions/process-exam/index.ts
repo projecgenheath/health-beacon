@@ -104,9 +104,9 @@ serve(async (req) => {
     console.log(`File converted to Base64 (${base64Content.length} bytes), MimeType: ${mimeType}`);
 
     // --- DIRECT GEMINI API CALL ---
-    let googleAIKey = Deno.env.get('GOOGLE_AI_API_KEY');
+    const googleAIKey = Deno.env.get('GOOGLE_AI_API_KEY');
     if (!googleAIKey) {
-      googleAIKey = 'AIzaSyBIP6herDQN5BTrQl6uGjijOLsWV8WqZMg';
+      throw new Error('GOOGLE_AI_API_KEY environment variable is not set');
     }
 
     console.log('Calling Gemini API for extraction...');
