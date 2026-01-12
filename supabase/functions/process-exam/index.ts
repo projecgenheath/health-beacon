@@ -103,77 +103,54 @@ serve(async (req: Request) => {
 
     console.log(`File converted to Base64 (${base64Content.length} bytes), MimeType: ${mimeType}`);
 
-    // --- LOVABLE AI GATEWAY ---
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY environment variable is not set');
+    // --- DIRECT GEMINI API CALL ---
+    const googleAIKey = Deno.env.get('CHAVE_API_DO_GOOGLE_AI') ?? Deno.env.get('GOOGLE_AI_API_KEY');
+    if (!googleAIKey) {
+      throw new Error('CHAVE_API_DO_GOOGLE_AI (or GOOGLE_AI_API_KEY) environment variable is not set');
     }
 
-    console.log('Calling Lovable AI Gateway (Gemini 2.5 Flash) for extraction...');
+    console.log('Calling Gemini API for extraction...');
 
-    const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
-    
-Return ONLY valid JSON in this exact format, with no extra text or markdown:
-{
-  "lab_name": "string or null",
-  "exam_date": "YYYY-MM-DD or null",
-  "results": [
-    {
-      "name": "string",
-      "value": number,
-      "unit": "string",
-      "reference_min": number or null,
-      "reference_max": number or null,
-      "category": "string",
-      "status": "healthy" | "warning" | "danger"
-    }
-  ]
-}
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b:generateContent?key=${googleAIKey}`;
+    console.log(`Using model: gemma-3-27b`);
 
-IMPORTANT:
-1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
-2. For exam names, use a consistent name if possible (e.g., "Glicose", "Colesterol Total").
-3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.
-4. Determine status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out.`;
-
-    // Use Lovable AI Gateway
-    const aiResponse = await fetch('https://ai-gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
+    // Use Google AI Direct API
+    const geminiResponse = await fetch(geminiUrl, {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
+            parts: [
+              { text: prompt },
               {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64Content}`,
+                inlineData: {
+                  mimeType: mimeType,
+                  data: base64Content,
                 },
               },
             ],
           },
         ],
-        response_format: { type: 'json_object' },
+        generationConfig: {
+          responseMimeType: "application/json",
+        },
       }),
     });
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error(`Lovable AI Gateway error: ${aiResponse.status}`, errorText);
-      throw new Error(`AI extraction failed: ${aiResponse.status} - ${errorText}`);
+    if (!geminiResponse.ok) {
+      const errorText = await geminiResponse.text();
+      console.error(`Gemini API error: ${geminiResponse.status}`, errorText);
+      throw new Error(`AI extraction failed: ${geminiResponse.status}`);
     }
 
-    const aiResult = await aiResponse.json();
-    const content = aiResult.choices?.[0]?.message?.content;
+    const geminiResult = await geminiResponse.json();
+    const content = geminiResult.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!content) {
-      console.error('Empty response from AI:', JSON.stringify(aiResult));
+      console.error('Empty response from AI:', JSON.stringify(geminiResult));
       throw new Error('No content in AI response');
     }
 
