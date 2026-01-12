@@ -47,6 +47,7 @@ export const Sidebar = () => {
             className={cn(
                 "sticky top-0 h-screen transition-all duration-300 ease-in-out z-40 flex-shrink-0",
                 "bg-card/80 backdrop-blur-xl border-r border-border/50",
+                "hidden md:flex md:flex-col",
                 isCollapsed ? "w-20" : "w-64"
             )}
         >
