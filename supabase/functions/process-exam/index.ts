@@ -111,8 +111,8 @@ serve(async (req: Request) => {
 
     console.log('Calling Gemini API for extraction...');
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b:generateContent?key=${googleAIKey}`;
-    console.log(`Using model: gemma-3-27b`);
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${googleAIKey}`;
+    console.log(`Using model: gemma-3-27b-it`);
 
     const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
     
