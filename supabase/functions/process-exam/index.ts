@@ -111,8 +111,8 @@ serve(async (req: Request) => {
 
     console.log('Calling Gemini API for extraction...');
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b:generateContent?key=${googleAIKey}`;
-    console.log(`Using model: gemma-3-27b`);
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${googleAIKey}`;
+    console.log(`Using model: gemini-2.0-flash`);
 
     // Use Google AI Direct API
     const geminiResponse = await fetch(geminiUrl, {
