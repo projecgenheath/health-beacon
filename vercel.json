@@ -1,15 +1,17 @@
 {
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
-        }
-    ],
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
-    "installCommand": "npm install",
-    "framework": "vite",
-    "env": {
-        "NODE_VERSION": "18"
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "env": {
+    "NODE_VERSION": "18",
+    "VITE_SUPABASE_URL": "https://nufifxcjujpjipoocvaz.supabase.co",
+    "VITE_SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51ZmlmeGNqdWpwamlwb29jdmF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjcxMDU1MzgsImV4cCI6MjA4MjY4MTUzOH0.uH9YWmsJAG8dV84-4QQvES8-Tou3dkYgV4xs8tiwrwA"
+  }
 }
