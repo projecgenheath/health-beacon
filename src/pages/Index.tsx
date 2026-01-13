@@ -66,6 +66,7 @@ const Index = () => {
 
         <ExamResultsList
           exams={exams}
+          histories={histories}
           onExamDeleted={refetch}
           filterProps={{
             filteredData,

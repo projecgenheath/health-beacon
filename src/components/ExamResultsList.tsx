@@ -1,11 +1,12 @@
 import { memo, useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { SearchBar } from './SearchBar';
+import { ImprovedExamChart } from './ImprovedExamChart';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
     Activity,
@@ -15,11 +16,15 @@ import {
     FileSearch,
     Calendar,
     Beaker,
+    ChevronDown,
+    ChevronUp,
+    Sparkles,
 } from 'lucide-react';
-import { ExamResult } from '@/types/exam';
+import { ExamResult, ExamHistory } from '@/types/exam';
 
 interface ExamResultsListProps {
     exams: ExamResult[];
+    histories?: ExamHistory[];
     onExamDeleted?: () => void;
     loading?: boolean;
     filterProps?: {
@@ -34,96 +39,177 @@ const getStatusConfig = (status: string) => {
         case 'healthy':
             return {
                 color: 'bg-status-healthy/10 text-status-healthy border-status-healthy/20',
+                gradient: 'from-status-healthy/20 to-status-healthy/5',
                 label: 'Normal',
                 icon: TrendingUp,
+                dotColor: 'bg-status-healthy',
             };
         case 'warning':
             return {
                 color: 'bg-status-warning/10 text-status-warning border-status-warning/20',
+                gradient: 'from-status-warning/20 to-status-warning/5',
                 label: 'Atenção',
                 icon: Minus,
+                dotColor: 'bg-status-warning',
             };
         case 'danger':
             return {
                 color: 'bg-status-danger/10 text-status-danger border-status-danger/20',
+                gradient: 'from-status-danger/20 to-status-danger/5',
                 label: 'Alterado',
                 icon: TrendingDown,
+                dotColor: 'bg-status-danger',
             };
         default:
             return {
                 color: 'bg-muted text-muted-foreground',
+                gradient: 'from-muted/20 to-muted/5',
                 label: 'Desconhecido',
                 icon: Activity,
+                dotColor: 'bg-muted-foreground',
             };
     }
 };
 
-const ExamResultCard = ({ exam }: { exam: ExamResult }) => {
+interface ExamResultCardProps {
+    exam: ExamResult;
+    history?: ExamHistory;
+}
+
+const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
+    const [expanded, setExpanded] = useState(false);
     const statusConfig = getStatusConfig(exam.status);
     const StatusIcon = statusConfig.icon;
 
+    // Calculate percentage within reference range
+    const rangePercentage = exam.referenceMax !== exam.referenceMin
+        ? ((exam.value - exam.referenceMin) / (exam.referenceMax - exam.referenceMin)) * 100
+        : 50;
+    const clampedPercentage = Math.max(0, Math.min(100, rangePercentage));
+
     return (
-        <Card className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50">
-            <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                    {/* Icon */}
+        <Card className={cn(
+            'group overflow-hidden transition-all duration-500 hover:shadow-xl',
+            'backdrop-blur-xl bg-card/80 border-border/50',
+            'hover:border-primary/30 hover:bg-card/90'
+        )}>
+            {/* Gradient overlay */}
+            <div className={cn(
+                'absolute inset-0 bg-gradient-to-br opacity-30 pointer-events-none',
+                statusConfig.gradient
+            )} />
+
+            <CardContent className="p-5 relative">
+                <div className="flex items-start gap-4">
+                    {/* Icon with glow effect */}
                     <div className={cn(
-                        'h-10 w-10 rounded-xl flex items-center justify-center flex-shrink-0',
-                        exam.status === 'healthy' && 'bg-status-healthy/10',
-                        exam.status === 'warning' && 'bg-status-warning/10',
-                        exam.status === 'danger' && 'bg-status-danger/10',
+                        'relative h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0',
+                        'bg-gradient-to-br shadow-lg',
+                        exam.status === 'healthy' && 'from-status-healthy/20 to-status-healthy/5 shadow-status-healthy/20',
+                        exam.status === 'warning' && 'from-status-warning/20 to-status-warning/5 shadow-status-warning/20',
+                        exam.status === 'danger' && 'from-status-danger/20 to-status-danger/5 shadow-status-danger/20',
                     )}>
                         <Beaker className={cn(
-                            'h-5 w-5',
+                            'h-7 w-7',
                             exam.status === 'healthy' && 'text-status-healthy',
                             exam.status === 'warning' && 'text-status-warning',
                             exam.status === 'danger' && 'text-status-danger',
                         )} />
+                        {/* Pulse animation for danger status */}
+                        {exam.status === 'danger' && (
+                            <span className="absolute inset-0 rounded-2xl animate-ping bg-status-danger/20" />
+                        )}
                     </div>
 
                     {/* Content */}
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                            <h4 className="font-semibold text-foreground truncate">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-lg font-bold text-foreground truncate">
                                 {exam.name}
                             </h4>
                             <Badge
                                 variant="outline"
-                                className={cn('gap-1 text-xs ml-2', statusConfig.color)}
+                                className={cn(
+                                    'gap-1.5 px-3 py-1 text-sm font-semibold rounded-xl',
+                                    statusConfig.color
+                                )}
                             >
-                                <StatusIcon className="h-3 w-3" />
+                                <StatusIcon className="h-3.5 w-3.5" />
                                 {statusConfig.label}
                             </Badge>
                         </div>
 
-                        <div className="flex items-center gap-4 text-sm">
-                            <div className="font-medium text-foreground">
-                                <span className="text-lg">{exam.value}</span>
-                                <span className="text-muted-foreground ml-1">{exam.unit}</span>
-                            </div>
-
-                            {(exam.referenceMin !== undefined || exam.referenceMax !== undefined) && (
-                                <div className="text-xs text-muted-foreground">
-                                    Ref: {exam.referenceMin ?? '-'} - {exam.referenceMax ?? '-'} {exam.unit}
-                                </div>
-                            )}
+                        {/* Value display with animation */}
+                        <div className="flex items-baseline gap-3 mb-3">
+                            <span className={cn(
+                                'text-3xl font-bold tabular-nums',
+                                exam.status === 'healthy' && 'text-status-healthy',
+                                exam.status === 'warning' && 'text-status-warning',
+                                exam.status === 'danger' && 'text-status-danger',
+                            )}>
+                                {exam.value}
+                            </span>
+                            <span className="text-lg text-muted-foreground">{exam.unit}</span>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-2">
+                        {/* Reference range bar */}
+                        <div className="mb-3">
+                            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                                <span>Ref: {exam.referenceMin}</span>
+                                <span>{exam.referenceMax} {exam.unit}</span>
+                            </div>
+                            <div className="relative h-2 rounded-full bg-muted/50 overflow-hidden">
+                                {/* Normal range indicator */}
+                                <div className="absolute inset-0 bg-gradient-to-r from-status-healthy/30 via-status-healthy/50 to-status-healthy/30 rounded-full" />
+                                {/* Current value marker */}
+                                <div
+                                    className={cn(
+                                        'absolute top-0 h-full w-1 rounded-full transition-all duration-500',
+                                        statusConfig.dotColor
+                                    )}
+                                    style={{ left: `${clampedPercentage}%`, transform: 'translateX(-50%)' }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Metadata */}
+                        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             {exam.date && (
-                                <div className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    <span>{format(new Date(exam.date), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                                <div className="flex items-center gap-1.5 bg-muted/30 px-2.5 py-1 rounded-lg">
+                                    <Calendar className="h-3.5 w-3.5" />
+                                    <span>{format(parseISO(exam.date), 'dd/MM/yyyy', { locale: ptBR })}</span>
                                 </div>
                             )}
                             {exam.category && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-xs font-medium">
                                     {exam.category}
                                 </Badge>
                             )}
                         </div>
                     </div>
                 </div>
+
+                {/* Expandable chart section */}
+                {history && history.history.length > 1 && (
+                    <>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpanded(!expanded)}
+                            className="w-full mt-4 text-muted-foreground hover:text-foreground gap-2"
+                        >
+                            <Sparkles className="h-4 w-4" />
+                            {expanded ? 'Ocultar histórico' : 'Ver evolução'}
+                            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+
+                        {expanded && (
+                            <div className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-top-2 duration-300">
+                                <ImprovedExamChart history={history} showDetails={true} />
+                            </div>
+                        )}
+                    </>
+                )}
             </CardContent>
         </Card>
     );
@@ -131,6 +217,7 @@ const ExamResultCard = ({ exam }: { exam: ExamResult }) => {
 
 const ExamResultsListComponent = ({
     exams,
+    histories,
     filterProps,
 }: ExamResultsListProps) => {
     const [internalSearch, setInternalSearch] = useState('');
@@ -149,11 +236,16 @@ const ExamResultsListComponent = ({
             exam.category?.toLowerCase().includes(internalSearch.toLowerCase())
         );
 
+    // Find matching history for each exam
+    const getHistoryForExam = (examName: string) => {
+        return histories?.find(h => h.examName === examName);
+    };
+
     if (exams.length === 0) {
         return (
-            <Card className="p-12">
+            <Card className="p-12 backdrop-blur-xl bg-card/80 border-border/50">
                 <div className="flex flex-col items-center justify-center text-center">
-                    <div className="rounded-full bg-muted p-6 mb-4">
+                    <div className="rounded-full bg-gradient-to-br from-muted to-muted/50 p-6 mb-4 shadow-lg">
                         <FileSearch className="h-12 w-12 text-muted-foreground" />
                     </div>
                     <h3 className="text-xl font-semibold mb-2">Nenhum exame encontrado</h3>
@@ -184,10 +276,11 @@ const ExamResultsListComponent = ({
                             <ExamResultCard
                                 key={exam.id}
                                 exam={exam}
+                                history={getHistoryForExam(exam.name)}
                             />
                         ))
                     ) : (
-                        <Card className="p-8">
+                        <Card className="p-8 backdrop-blur-xl bg-card/80">
                             <div className="flex flex-col items-center justify-center text-center">
                                 <FileSearch className="h-8 w-8 text-muted-foreground mb-2" />
                                 <p className="text-sm text-muted-foreground">
