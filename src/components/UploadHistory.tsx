@@ -313,7 +313,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                     </Button>
                   )}
 
-                  {upload.processed === false && (
+                  {(upload.processed === false || upload.processed === null) && (
                     <Button
                       type="button"
                       variant="outline"

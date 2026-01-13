@@ -111,8 +111,10 @@ serve(async (req: Request) => {
 
     console.log('Calling Gemini API for extraction...');
 
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${googleAIKey}`;
-    console.log(`Using model: gemma-3-27b-it`);
+    const modelName = 'gemma-3-27b-it';
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${googleAIKey}`;
+    console.log(`Using model: ${modelName}`);
+
 
     const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
     
@@ -177,32 +179,43 @@ IMPORTANT:
     }
 
     console.log('AI response received, parsing JSON...');
+    console.log('Raw AI content:', content.substring(0, 500));
 
     // Parse the JSON response from AI
     let parsedData: ParsedExamData;
     try {
       // Remove markdown code blocks if present
       const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      console.log('Clean content for parsing:', cleanContent.substring(0, 500));
       parsedData = JSON.parse(cleanContent);
+      console.log('Parsed data:', JSON.stringify(parsedData, null, 2).substring(0, 1000));
+      console.log('Results count from AI:', parsedData.results?.length ?? 0);
     } catch (parseError) {
       console.error('Failed to parse AI JSON response:', content);
       throw new Error('Failed to parse exam data from AI response');
     }
 
     // Use service role for database operations
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceRoleKey) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not set!');
+      throw new Error('Service role key not configured');
+    }
+    console.log('Service role key length:', serviceRoleKey.length);
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      serviceRoleKey
     );
 
-    // Update the exam record with extracted info
-    console.log('Updating exam record in database...');
+    // Update the exam record with extracted info (but not processed yet)
+    console.log('Updating exam record with lab info...');
     const { error: updateError } = await supabaseAdmin
       .from('exams')
       .update({
         lab_name: parsedData.lab_name,
-        exam_date: parsedData.exam_date,
-        processed: true
+        exam_date: parsedData.exam_date
+        // processed: true will be set AFTER results are inserted
       })
       .eq('id', examId)
       .eq('user_id', user.id);
@@ -211,6 +224,7 @@ IMPORTANT:
       console.error('Failed to update exam table:', updateError);
       throw new Error('Failed to update exam record');
     }
+    console.log('Exam record updated with lab info');
 
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
@@ -219,6 +233,7 @@ IMPORTANT:
       const validResults = parsedData.results.filter(result =>
         result.name && result.value !== undefined && result.value !== null
       );
+      console.log(`After filtering: ${validResults.length} valid results`);
 
       const examResults = validResults.map(result => ({
         exam_id: examId,
@@ -233,25 +248,46 @@ IMPORTANT:
         exam_date: parsedData.exam_date || new Date().toISOString().split('T')[0]
       }));
 
+      console.log('First result to insert:', JSON.stringify(examResults[0], null, 2));
+
       if (examResults.length === 0) {
-        console.log('No valid exam results to save');
+        console.log('No valid exam results to save after mapping');
         return new Response(
           JSON.stringify({
             success: true,
             message: 'Exam processed but no valid results found',
-            resultsCount: 0
+            resultsCount: 0,
+            rawResultsCount: parsedData.results.length
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const { error: insertError } = await supabaseAdmin
+      console.log(`Inserting ${examResults.length} results into exam_results table...`);
+      const { data: insertData, error: insertError } = await supabaseAdmin
         .from('exam_results')
-        .insert(examResults);
+        .insert(examResults)
+        .select();
 
       if (insertError) {
-        console.error('Failed to insert results into exam_results table:', insertError);
-        throw new Error('Failed to save exam results');
+        console.error('Failed to insert results into exam_results table:', JSON.stringify(insertError, null, 2));
+        throw new Error(`Failed to save exam results: ${insertError.message}`);
+      }
+
+      console.log(`Successfully inserted ${insertData?.length ?? 0} results`);
+
+      // Now mark the exam as processed since results were saved
+      console.log('Marking exam as processed...');
+      const { error: markProcessedError } = await supabaseAdmin
+        .from('exams')
+        .update({ processed: true })
+        .eq('id', examId)
+        .eq('user_id', user.id);
+
+      if (markProcessedError) {
+        console.error('Failed to mark exam as processed:', markProcessedError);
+      } else {
+        console.log('Exam marked as processed successfully');
       }
 
       console.log(`Successfully saved ${examResults.length} exam results`);
@@ -287,6 +323,20 @@ IMPORTANT:
         } catch (emailError) {
           console.error('Failed to call send-exam-alerts function:', emailError);
         }
+      }
+    } else {
+      // No results from AI - still mark as processed
+      console.log('No results returned from AI. Marking exam as processed anyway.');
+      const { error: markProcessedError } = await supabaseAdmin
+        .from('exams')
+        .update({ processed: true })
+        .eq('id', examId)
+        .eq('user_id', user.id);
+
+      if (markProcessedError) {
+        console.error('Failed to mark exam as processed:', markProcessedError);
+      } else {
+        console.log('Exam marked as processed (no results)');
       }
     }
 

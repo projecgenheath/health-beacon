@@ -4,12 +4,13 @@ import { HealthSummaryCard } from '@/components/HealthSummaryCard';
 import { UploadSection } from '@/components/UploadSection';
 import { UploadHistory } from '@/components/UploadHistory';
 import { AlertsSection } from '@/components/AlertsSection';
-import { ExamsList } from '@/components/ExamsList';
+import { ExamResultsList } from '@/components/ExamResultsList';
 import { DashboardSkeleton } from '@/components/skeletons';
 import { ExportPDFButton } from '@/components/ExportPDFButton';
 import { HealthGoals } from '@/components/HealthGoals';
 import { AIInsightsWidget } from '@/components/AIInsightsWidget';
 import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
+
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
@@ -63,21 +64,13 @@ const Index = () => {
           <ExportPDFButton exams={exams} summary={summary} />
         </div>
 
-        <ExamsList
+        <ExamResultsList
           exams={exams}
-          histories={histories}
           onExamDeleted={refetch}
           filterProps={{
-            filters,
             filteredData,
-            stats,
             setSearchTerm,
-            setDateRange,
-            toggleStatus,
-            toggleCategory,
-            toggleLab,
-            setSorting,
-            resetFilters
+            filters: { searchTerm: filters.searchTerm }
           }}
         />
       </div>

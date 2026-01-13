@@ -118,7 +118,7 @@ export const UpdateBMIDialog = ({
       onSuccess?.();
     } catch (error) {
       console.error('Error saving BMI:', error);
-      toast.error('Erro ao salvar medidas');
+      toast.error(`Erro ao salvar medidas: ${(error as Error).message || 'Erro desconhecido'}`);
     } finally {
       setSaving(false);
     }
