@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { ExamViewerModal } from './ExamViewerModal';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import {
   Collapsible,
   CollapsibleContent,
@@ -46,6 +47,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [reprocessingId, setReprocessingId] = useState<string | null>(null);
   const [viewingExam, setViewingExam] = useState<ExamUpload | null>(null);
+  const [deletingExam, setDeletingExam] = useState<ExamUpload | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -137,7 +139,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, exam: ExamUpload) => {
+  const handleDelete = (e: React.MouseEvent, exam: ExamUpload) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -150,56 +152,59 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
       return;
     }
 
-    const shouldConfirm = (window as unknown as { __SKIP_CONFIRM__?: boolean }).__SKIP_CONFIRM__ || window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.');
+    setDeletingExam(exam);
+  };
 
-    if (shouldConfirm) {
-      try {
-        console.log('Attempting to delete exam:', exam.id);
-        setLoading(true);
+  const performDelete = async () => {
+    if (!deletingExam) return;
 
-        // 1. Delete file from storage if it exists
-        if (exam.file_url) {
-          console.log('Deleting file from storage:', exam.file_url);
-          const { error: storageError } = await supabase.storage
-            .from('exam-files')
-            .remove([exam.file_url]);
+    try {
+      console.log('Attempting to delete exam:', deletingExam.id);
+      setLoading(true);
 
-          if (storageError) {
-            console.error('Error deleting file from storage:', storageError);
-            // We continue anyway to try and delete the database record
-          }
+      // 1. Delete file from storage if it exists
+      if (deletingExam.file_url) {
+        console.log('Deleting file from storage:', deletingExam.file_url);
+        const { error: storageError } = await supabase.storage
+          .from('exam-files')
+          .remove([deletingExam.file_url]);
+
+        if (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+          // We continue anyway to try and delete the database record
         }
-
-        // 2. Delete from database
-        console.log('Deleting record from database:', exam.id);
-        const { error: dbError } = await supabase
-          .from('exams')
-          .delete()
-          .eq('id', exam.id);
-
-        if (dbError) {
-          console.error('Database delete error:', dbError);
-          throw dbError;
-        }
-
-        toast({
-          title: 'Exame excluído',
-          description: 'O upload e seus resultados foram removidos.',
-        });
-
-        console.log('Deletion successful. Refreshing list...');
-        await fetchUploads();
-        onReprocess?.();
-      } catch (error) {
-        console.error('Detailed deletion error:', error);
-        toast({
-          title: 'Erro ao excluir',
-          description: error instanceof Error ? error.message : 'Não foi possível remover o exame.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
       }
+
+      // 2. Delete from database
+      console.log('Deleting record from database:', deletingExam.id);
+      const { error: dbError } = await supabase
+        .from('exams')
+        .delete()
+        .eq('id', deletingExam.id);
+
+      if (dbError) {
+        console.error('Database delete error:', dbError);
+        throw dbError;
+      }
+
+      toast({
+        title: 'Exame excluído',
+        description: 'O upload e seus resultados foram removidos.',
+      });
+
+      console.log('Deletion successful. Refreshing list...');
+      await fetchUploads();
+      onReprocess?.();
+    } catch (error) {
+      console.error('Detailed deletion error:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: error instanceof Error ? error.message : 'Não foi possível remover o exame.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+      setDeletingExam(null);
     }
   };
 
@@ -232,7 +237,10 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
         style={{ animationDelay: '150ms' }}
       >
         <CollapsibleTrigger asChild>
-          <button className="flex items-center justify-between w-full p-4 hover:bg-accent/30 transition-colors">
+          <button
+            className="flex items-center justify-between w-full p-4 hover:bg-accent/30 transition-colors"
+            aria-label={isOpen ? "Fechar histórico de uploads" : "Abrir histórico de uploads"}
+          >
             <div className="flex items-center gap-3">
               <div className={cn(
                 'h-10 w-10 rounded-xl flex items-center justify-center',
@@ -299,6 +307,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                         e.stopPropagation();
                         setViewingExam(upload);
                       }}
+                      aria-label={`Visualizar ${upload.file_name}`}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -312,6 +321,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                       onClick={(e) => handleReprocess(e, upload)}
                       disabled={reprocessingId === upload.id}
                       className="h-8"
+                      aria-label={`Reprocessar ${upload.file_name}`}
                     >
                       <RefreshCw className={cn(
                         'h-4 w-4 mr-1',
@@ -326,13 +336,8 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (window.confirm('Deseja realmente excluir este upload? Todos os resultados associados serão removidos.')) {
-                        handleDelete(e, upload);
-                      }
-                    }}
+                    onClick={(e) => handleDelete(e, upload)}
+                    aria-label={`Excluir ${upload.file_name}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -341,7 +346,18 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
             ))}
           </div>
         </CollapsibleContent>
-      </Collapsible >
+      </Collapsible>
+
+      <ConfirmDialog
+        open={!!deletingExam}
+        onOpenChange={(open) => !open && setDeletingExam(null)}
+        title="Confirmar exclusão"
+        description={`Deseja realmente excluir "${deletingExam?.file_name}"? Todos os resultados associados serão removidos permanentemente.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        onConfirm={performDelete}
+        variant="destructive"
+      />
 
       <ExamViewerModal
         isOpen={!!viewingExam}

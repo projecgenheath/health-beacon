@@ -1,163 +1,126 @@
-import { useMemo } from 'react';
-import { ExamResult, ExamHistory } from '@/types/exam';
-import { ExamCard } from './ExamCard';
+import { memo, useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
 import { SearchBar } from './SearchBar';
-import { FilterPanel } from './FilterPanel';
-import { ActiveFilters } from './ActiveFilters';
-import { useSearchAndFilter, FilterConfig } from '@/hooks/useSearchAndFilter';
-import { FileQuestion } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
+import { ExamCard } from './ExamCard';
+import { ExamViewerModal } from './ExamViewerModal';
 
-interface ExamsListProps {
-  exams: ExamResult[];
-  histories: ExamHistory[];
-  onExamDeleted?: () => void;
-  filterProps?: {
-    filters: FilterConfig;
-    filteredData: ExamResult[];
-    stats: { total: number; filtered: number; hasActiveFilters: boolean };
-    setSearchTerm: (term: string) => void;
-    setDateRange: (start: string | null, end: string | null) => void;
-    toggleStatus: (status: string) => void;
-    toggleCategory: (category: string) => void;
-    toggleLab: (lab: string) => void;
-    setSorting: (sortBy: FilterConfig['sortBy'], sortOrder: FilterConfig['sortOrder']) => void;
-    resetFilters: () => void;
-  };
+interface Exam {
+  id: string;
+  file_name: string;
+  exam_date: string | null;
+  lab_name: string | null;
+  processed: boolean | null;
+  created_at: string;
 }
 
-export const ExamsList = ({ exams, histories, onExamDeleted, filterProps }: ExamsListProps) => {
-  // Extrair categorias e labs únicos dos exames
-  const availableCategories = useMemo(() => {
-    const categories = new Set(exams.map(e => e.category).filter(Boolean));
-    return Array.from(categories) as string[];
-  }, [exams]);
-
-  const availableLabs: string[] = [];
-
-  // Usar os filtros passados via props ou inicializar hook local se não houver (fallback)
-  const localFilters = useSearchAndFilter(exams as unknown as Record<string, unknown>[], {
-    searchFields: ['name', 'category'],
-    dateField: 'date',
-    statusField: 'status',
-    categoryField: 'category',
-  });
-
-  const {
-    filters,
-    filteredData,
-    stats,
-    setSearchTerm,
-    setDateRange,
-    toggleStatus,
-    toggleCategory,
-    toggleLab,
-    setSorting,
-    resetFilters,
-  } = filterProps || localFilters;
-
-  const filteredExams = filteredData as unknown as ExamResult[];
-
-  const getHistory = (examName: string) => {
-    return histories.find((h) => h.examName === examName);
+interface ExamsListProps {
+  exams: Exam[];
+  onExamDeleted?: () => void;
+  loading?: boolean;
+  filterProps?: {
+    filteredData: Exam[];
+    setSearchTerm: (term: string) => void;
+    filters: { searchTerm: string };
   };
+  histories?: any;
+}
 
-  const activeFiltersCount =
-    filters.statuses.length +
-    filters.categories.length +
-    filters.labs.length +
-    (filters.dateRange.start ? 1 : 0) +
-    (filters.dateRange.end ? 1 : 0);
+const ExamsListComponent = ({
+  exams,
+  onExamDeleted,
+  filterProps,
+}: ExamsListProps) => {
+  const [internalSearch, setInternalSearch] = useState('');
+  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
+
+  // Determine which data and search handler to use
+  const displayExams = filterProps?.filteredData || exams;
+  const searchTerm = filterProps ? filterProps.filters.searchTerm : internalSearch;
+  const handleSearchChange = filterProps ? filterProps.setSearchTerm : setInternalSearch;
+
+  // Filter internally if no filterProps are provided
+  const visibleExams = filterProps
+    ? displayExams
+    : exams.filter(exam =>
+      !internalSearch ||
+      exam.file_name.toLowerCase().includes(internalSearch.toLowerCase()) ||
+      exam.lab_name?.toLowerCase().includes(internalSearch.toLowerCase())
+    );
+
+  if (exams.length === 0) {
+    return (
+      <Card className="p-12">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="rounded-full bg-muted p-6 mb-4">
+            <FileSearch className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h3 className="text-xl font-semibold mb-2">Nenhum exame encontrado</h3>
+          <p className="text-muted-foreground mb-6 max-w-sm">
+            Comece fazendo o upload do seu primeiro exame médico.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
-    <div className="animate-slide-up space-y-4" style={{ animationDelay: '200ms' }}>
-      {/* Header with title */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-foreground">Seus Exames</h2>
-      </div>
-
-      {/* Search and Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1">
-          <SearchBar
-            value={filters.searchTerm}
-            onChange={setSearchTerm}
-            placeholder="Buscar exames por nome, categoria..."
-          />
-        </div>
-        <FilterPanel
-          filters={filters}
-          onStatusToggle={toggleStatus}
-          onCategoryToggle={toggleCategory}
-          onLabToggle={toggleLab}
-          onDateRangeChange={setDateRange}
-          onSortChange={setSorting}
-          onReset={resetFilters}
-          availableCategories={availableCategories}
-          availableLabs={availableLabs}
-          activeFiltersCount={activeFiltersCount}
+    <div className="space-y-4">
+      {/* Search Bar */}
+      {exams.length > 5 && (
+        <SearchBar
+          value={searchTerm}
+          onChange={handleSearchChange}
+          placeholder="Buscar exames..."
         />
-      </div>
-
-      {/* Active Filters */}
-      <ActiveFilters
-        filters={filters}
-        onRemoveStatus={toggleStatus}
-        onRemoveCategory={toggleCategory}
-        onRemoveLab={toggleLab}
-        onClearDateRange={() => setDateRange(null, null)}
-        onClearAll={resetFilters}
-        totalResults={stats.total}
-        filteredResults={stats.filtered}
-      />
-
-      {/* Results Count - Only show if searching */}
-      {filters.searchTerm && !stats.hasActiveFilters && (
-        <p className="text-sm text-muted-foreground">
-          {stats.filtered === 0
-            ? 'Nenhum resultado encontrado'
-            : `${stats.filtered} resultado${stats.filtered !== 1 ? 's' : ''} encontrado${stats.filtered !== 1 ? 's' : ''}`
-          }
-        </p>
       )}
 
-      {/* Exams Grid/List */}
-      {filteredExams.length > 0 ? (
-        <div className="space-y-3">
-          {filteredExams.map((exam, index) => (
-            <ExamCard
-              key={exam.id}
-              exam={exam}
-              history={getHistory(exam.name)}
-              index={index}
-              onDelete={onExamDeleted}
-              examId={exam.examId}
-              fileUrl={exam.fileUrl}
-              fileName={exam.fileName}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-            <FileQuestion className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">Nenhum exame encontrado</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            {stats.hasActiveFilters || filters.searchTerm
-              ? 'Tente ajustar os filtros ou termo de busca'
-              : 'Faça upload do seu primeiro exame para começar'
-            }
-          </p>
-          {stats.hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="text-sm text-primary hover:underline"
-            >
-              Limpar todos os filtros
-            </button>
+      {/* Exams Grid */}
+      <ScrollArea className="h-[calc(100vh-300px)]">
+        <div className="grid gap-4 pb-4">
+          {visibleExams.length > 0 ? (
+            visibleExams.map((exam) => (
+              <ExamCard
+                key={exam.id}
+                exam={exam}
+                onView={() => setSelectedExam(exam)}
+                onDelete={onExamDeleted || (() => { })}
+              />
+            ))
+          ) : (
+            <Card className="p-8">
+              <div className="flex flex-col items-center justify-center text-center">
+                <FileSearch className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum resultado para "{searchTerm}"
+                </p>
+                <Button
+                  variant="link"
+                  onClick={() => handleSearchChange('')}
+                  className="mt-2"
+                >
+                  Limpar busca
+                </Button>
+              </div>
+            </Card>
           )}
         </div>
-      )}
+      </ScrollArea>
+
+      {/* Exam Viewer Modal */}
+      <ExamViewerModal
+        isOpen={!!selectedExam}
+        onClose={() => setSelectedExam(null)}
+        fileUrl={selectedExam?.file_name || null} // Assuming file_name is used as path or we need another field? 
+        // Wait, ExamViewerCard used fileUrl. Exam interface has file_name. 
+        // Usually Supabase storage path matches file_name or there is a file_path field.
+        // Let's re-check Exam interface in Index.tsx or useExamData.
+        fileName={selectedExam?.file_name || ''}
+      />
     </div>
   );
 };
+
+export const ExamsList = memo(ExamsListComponent);

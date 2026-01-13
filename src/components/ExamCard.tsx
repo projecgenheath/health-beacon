@@ -1,277 +1,118 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ExamResult, ExamHistory } from '@/types/exam';
-import { ChevronDown, TrendingUp, TrendingDown, Minus, Trash2, FileText, Eye } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ImprovedExamChart } from './ImprovedExamChart';
-import { ExamViewerModal } from './ExamViewerModal';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+import { memo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import {
+  FileText,
+  Calendar,
+  Building2,
+  Eye,
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react';
 
 interface ExamCardProps {
-  exam: ExamResult;
-  history?: ExamHistory;
-  index: number;
-  onDelete?: () => void;
-  examId?: string;
-  fileUrl?: string | null;
-  fileName?: string;
+  exam: {
+    id: string;
+    file_name: string;
+    exam_date: string | null;
+    lab_name: string | null;
+    processed: boolean | null;
+    created_at: string;
+  };
+  onView: () => void;
+  onDelete: () => void;
 }
 
-export const ExamCard = ({ exam, history, index, onDelete, examId, fileUrl, fileName }: ExamCardProps) => {
-  const navigate = useNavigate();
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showViewer, setShowViewer] = useState(false);
-
-  const statusConfig = {
-    healthy: {
-      bg: 'bg-status-healthy-bg',
-      text: 'text-status-healthy',
-      border: 'border-status-healthy/20',
-      glow: 'shadow-glow-healthy',
-      gradient: 'gradient-healthy',
-      label: 'Normal',
-    },
-    warning: {
-      bg: 'bg-status-warning-bg',
-      text: 'text-status-warning',
-      border: 'border-status-warning/20',
-      glow: 'shadow-glow-warning',
-      gradient: 'gradient-warning',
-      label: 'Atenção',
-    },
-    danger: {
-      bg: 'bg-status-danger-bg',
-      text: 'text-status-danger',
-      border: 'border-status-danger/20',
-      glow: 'shadow-glow-danger',
-      gradient: 'gradient-danger',
-      label: 'Alterado',
-    },
+const ExamCardComponent = ({ exam, onView, onDelete }: ExamCardProps) => {
+  const getStatusColor = (processed: boolean | null) => {
+    if (processed === true) return 'bg-status-healthy/10 text-status-healthy border-status-healthy/20';
+    if (processed === false) return 'bg-status-danger/10 text-status-danger border-status-danger/20';
+    return 'bg-status-warning/10 text-status-warning border-status-warning/20';
   };
 
-  const config = statusConfig[exam.status];
-
-  const getTrend = () => {
-    if (!history || history.history.length < 2) return null;
-    const lastTwo = history.history.slice(-2);
-    const diff = lastTwo[1].value - lastTwo[0].value;
-    if (Math.abs(diff) < 0.1) return 'stable';
-    return diff > 0 ? 'up' : 'down';
+  const getStatusIcon = (processed: boolean | null) => {
+    if (processed === true) return <CheckCircle className="h-3 w-3" />;
+    if (processed === false) return <AlertCircle className="h-3 w-3" />;
+    return <AlertCircle className="h-3 w-3" />;
   };
 
-  const trend = getTrend();
-
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsDeleting(true);
-    try {
-      if (examId) {
-        // If we have an examId (from the exams table), delete the parent record
-        // This will cascade to all related exam_results
-
-        // First, optionally delete the file from storage if fileUrl is present
-        if (fileUrl) {
-          const { error: storageError } = await supabase.storage
-            .from('exam-files')
-            .remove([fileUrl]);
-
-          if (storageError) {
-            console.error('Error deleting file from storage:', storageError);
-          }
-        }
-
-        const { error: dbError } = await supabase
-          .from('exams')
-          .delete()
-          .eq('id', examId);
-
-        if (dbError) throw dbError;
-
-        toast({
-          title: 'Exame excluído',
-          description: `O upload de ${fileName || exam.name} e todos os seus resultados foram removidos.`,
-        });
-      } else {
-        // Fallback: only delete this specific result if no examId is provided
-        const { error } = await supabase
-          .from('exam_results')
-          .delete()
-          .eq('id', exam.id);
-
-        if (error) throw error;
-
-        toast({
-          title: 'Resultado excluído',
-          description: `O resultado de ${exam.name} foi removido com sucesso.`,
-        });
-      }
-
-      onDelete?.();
-    } catch (error) {
-      console.error('Error deleting exam:', error);
-      toast({
-        title: 'Erro ao excluir',
-        description: 'Não foi possível excluir o exame.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+  const getStatusText = (processed: boolean | null) => {
+    if (processed === true) return 'Processado';
+    if (processed === false) return 'Falha';
+    return 'Pendente';
   };
 
   return (
-    <div
-      className={cn(
-        'group relative overflow-hidden rounded-2xl bg-card border cursor-pointer',
-        'transition-all duration-300 ease-out',
-        config.border,
-        isExpanded ? cn(config.glow, 'scale-[1.01]') : 'shadow-sm hover:shadow-md hover:-translate-y-0.5',
-        'animate-slide-up'
-      )}
-      style={{ animationDelay: `${index * 50}ms` }}
-      onClick={() => setIsExpanded(!isExpanded)}
-    >
-      {/* Status indicator bar with gradient animation */}
-      <div className={cn('absolute left-0 top-0 h-full w-1', config.gradient, 'transition-all duration-300', isExpanded && 'w-1.5')} />
+    <Card className="group hover:shadow-lg transition-all duration-300 hover:border-primary/50">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          {/* Icon */}
+          <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <FileText className="h-5 w-5 text-primary" />
+          </div>
 
-      <div className="p-4 pl-5">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-medium text-foreground">{exam.name}</h3>
-              {trend && (
-                <div className={cn('p-1 rounded-full', config.bg)}>
-                  {trend === 'up' && <TrendingUp className={cn('h-3 w-3', config.text)} />}
-                  {trend === 'down' && <TrendingDown className={cn('h-3 w-3', config.text)} />}
-                  {trend === 'stable' && <Minus className={cn('h-3 w-3', config.text)} />}
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-foreground truncate mb-1">
+              {exam.file_name}
+            </h4>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-2">
+              {exam.exam_date && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  <span>{format(new Date(exam.exam_date), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                </div>
+              )}
+              {exam.lab_name && (
+                <div className="flex items-center gap-1">
+                  <Building2 className="h-3 w-3" />
+                  <span>{exam.lab_name}</span>
                 </div>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">{exam.category}</p>
+
+            {/* Status Badge */}
+            <Badge
+              variant="outline"
+              className={cn('gap-1 text-xs', getStatusColor(exam.processed))}
+            >
+              {getStatusIcon(exam.processed)}
+              {getStatusText(exam.processed)}
+            </Badge>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className={cn('text-xl font-bold', config.text)}>
-                {exam.value} <span className="text-sm font-normal text-muted-foreground">{exam.unit}</span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Ref: {exam.referenceMin}-{exam.referenceMax}
-              </p>
-            </div>
-
-            <div className={cn('px-3 py-1.5 rounded-full text-xs font-medium', config.bg, config.text)}>
-              {config.label}
-            </div>
-
-            {fileUrl && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowViewer(true);
-                }}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-
-            {examId && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/exam/${examId}`);
-                }}
-              >
-                <FileText className="h-4 w-4" />
-              </Button>
-            )}
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir resultado?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir o resultado de <strong>{exam.name}</strong>?
-                    Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDelete}
-                    disabled={isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {isDeleting ? 'Excluindo...' : 'Excluir'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <ChevronDown
-              className={cn(
-                'h-5 w-5 text-muted-foreground transition-transform duration-300',
-                isExpanded && 'rotate-180'
-              )}
-            />
+          {/* Actions */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={onView}
+              title="Visualizar"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={onDelete}
+              title="Excluir"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      </div>
-
-      {/* Expanded content with chart */}
-      <div
-        className={cn(
-          'overflow-hidden transition-all duration-300 ease-in-out',
-          isExpanded ? 'max-h-80 opacity-100' : 'max-h-0 opacity-0'
-        )}
-      >
-        <div className="px-5 pb-4 pt-2 border-t border-border/50">
-          {history ? (
-            <ImprovedExamChart history={history} showDetails={true} />
-          ) : (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              Sem histórico disponível para este exame
-            </p>
-          )}
-        </div>
-      </div>
-
-      <ExamViewerModal
-        isOpen={showViewer}
-        onClose={() => setShowViewer(false)}
-        fileUrl={fileUrl || null}
-        fileName={fileName || exam.name}
-      />
-    </div>
+      </CardContent>
+    </Card>
   );
 };
+
+// Memoize to prevent unnecessary re-renders
+export const ExamCard = memo(ExamCardComponent);

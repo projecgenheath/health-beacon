@@ -55,7 +55,7 @@
     --gradient-danger: linear-gradient(135deg, hsl(0 80% 55%) 0%, hsl(15 85% 58%) 100%);
     --gradient-background: linear-gradient(160deg, hsl(200 25% 97%) 0%, hsl(195 30% 93%) 50%, hsl(200 20% 95%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(200 25% 98%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
     --gradient-hero: linear-gradient(135deg, hsl(168 80% 42%) 0%, hsl(200 85% 50%) 100%);
 
     /* Enhanced Shadows */
@@ -120,7 +120,7 @@
 
     --gradient-background: linear-gradient(160deg, hsl(215 40% 6%) 0%, hsl(215 35% 8%) 50%, hsl(210 40% 7%) 100%);
     --gradient-card: linear-gradient(145deg, hsl(215 35% 10%) 0%, hsl(215 32% 12%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(30,35,45,0.9) 0%, rgba(30,35,45,0.7) 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(30, 35, 45, 0.9) 0%, rgba(30, 35, 45, 0.7) 100%);
   }
 }
 
@@ -141,15 +141,15 @@
   .gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .gradient-healthy {
     background: var(--gradient-healthy);
   }
-  
+
   .gradient-warning {
     background: var(--gradient-warning);
   }
-  
+
   .gradient-danger {
     background: var(--gradient-danger);
   }
@@ -224,19 +224,15 @@
 
   .glass-card {
     @apply glass-effect rounded-2xl shadow-sm;
-    background: linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.8),
-      rgba(255, 255, 255, 0.5)
-    );
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.8),
+        rgba(255, 255, 255, 0.5));
   }
 
   .dark .glass-card {
-    background: linear-gradient(
-      135deg,
-      rgba(25, 30, 40, 0.8),
-      rgba(25, 30, 40, 0.5)
-    );
+    background: linear-gradient(135deg,
+        rgba(25, 30, 40, 0.8),
+        rgba(25, 30, 40, 0.5));
   }
 
   .sidebar-item-active {
@@ -253,6 +249,7 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -262,6 +259,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -272,6 +270,7 @@
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -283,6 +282,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -294,6 +294,7 @@
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -305,6 +306,7 @@
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -316,6 +318,7 @@
     opacity: 0;
     transform: scale(0.92);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -323,19 +326,25 @@
 }
 
 @keyframes bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-8px);
   }
 }
 
 @keyframes pulseSlow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.85;
     transform: scale(1.015);
@@ -343,15 +352,20 @@
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0) rotate(0deg);
   }
+
   25% {
     transform: translateY(-5px) rotate(1deg);
   }
+
   50% {
     transform: translateY(-10px) rotate(0deg);
   }
+
   75% {
     transform: translateY(-5px) rotate(-1deg);
   }
@@ -361,24 +375,31 @@
   from {
     background-position: -200% 0;
   }
+
   to {
     background-position: 200% 0;
   }
 }
 
 @keyframes gradientShift {
-  0%, 100% {
+
+  0%,
+  100% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
 }
 
 @keyframes glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
   }
+
   50% {
     box-shadow: 0 0 40px hsl(var(--primary) / 0.5);
   }
@@ -388,6 +409,7 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -466,9 +488,26 @@
 }
 
 /* Staggered animations */
-.stagger-1 { animation-delay: 50ms; }
-.stagger-2 { animation-delay: 100ms; }
-.stagger-3 { animation-delay: 150ms; }
-.stagger-4 { animation-delay: 200ms; }
-.stagger-5 { animation-delay: 250ms; }
-.stagger-6 { animation-delay: 300ms; }
+.stagger-1 {
+  animation-delay: 50ms;
+}
+
+.stagger-2 {
+  animation-delay: 100ms;
+}
+
+.stagger-3 {
+  animation-delay: 150ms;
+}
+
+.stagger-4 {
+  animation-delay: 200ms;
+}
+
+.stagger-5 {
+  animation-delay: 250ms;
+}
+
+.stagger-6 {
+  animation-delay: 300ms;
+}
