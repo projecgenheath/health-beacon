@@ -6,21 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Tipos de exame suportados
+type ExamType = 'laboratory' | 'imaging' | 'pathology';
+
 interface ExamResult {
   name: string;
-  value: number;
-  unit: string;
-  reference_min: number | null;
-  reference_max: number | null;
+  value?: number | null;           // Para exames laboratoriais
+  text_value?: string | null;      // Para exames de imagem/patologia (laudos descritivos)
+  unit?: string;
+  reference_min?: number | null;
+  reference_max?: number | null;
   category: string;
-  status: 'healthy' | 'warning' | 'danger';
+  status: 'healthy' | 'warning' | 'danger' | 'normal' | 'abnormal';
+  exam_type?: ExamType;
+  description?: string;            // Descrição detalhada do laudo
+  conclusion?: string;             // Conclusão do médico
 }
 
 interface ParsedExamData {
   lab_name: string | null;
   exam_date: string | null;
+  exam_type: ExamType;
   results: ExamResult[];
+  general_conclusion?: string;     // Conclusão geral do exame
 }
+
 
 function normalizeExamName(name: string): string {
   return name
@@ -116,30 +126,57 @@ serve(async (req: Request) => {
     console.log(`Using model: ${modelName}`);
 
 
-    const prompt = `You are an expert medical lab exam parser. Extract all exam results from the provided document.
-    
+    const prompt = `You are an expert medical document parser. Analyze the provided document and extract all medical exam information.
+
+FIRST, identify the type of exam:
+- "laboratory": Blood tests, urine tests, biochemistry, hematology, etc. (with numeric values)
+- "imaging": X-rays, CT scans, MRI, Ultrasound, Mammography, etc. (descriptive reports)
+- "pathology": Biopsies, cytology, histopathology, etc. (descriptive findings)
+
 Return ONLY valid JSON in this exact format, with no extra text or markdown:
 {
   "lab_name": "string or null",
   "exam_date": "YYYY-MM-DD or null",
+  "exam_type": "laboratory" | "imaging" | "pathology",
+  "general_conclusion": "string or null (overall conclusion if available)",
   "results": [
     {
-      "name": "string",
-      "value": number,
-      "unit": "string",
+      "name": "string (exam name)",
+      "value": number or null (ONLY for laboratory exams with numeric results),
+      "text_value": "string or null (for imaging/pathology descriptive results)",
+      "unit": "string or null",
       "reference_min": number or null,
       "reference_max": number or null,
-      "category": "string",
-      "status": "healthy" | "warning" | "danger"
+      "category": "string (e.g., 'Hematologia', 'Bioquímica', 'Radiologia', 'Patologia')",
+      "status": "healthy" | "warning" | "danger" | "normal" | "abnormal",
+      "exam_type": "laboratory" | "imaging" | "pathology",
+      "description": "string or null (detailed findings for imaging/pathology)",
+      "conclusion": "string or null (doctor's conclusion for this specific result)"
     }
   ]
 }
 
-IMPORTANT:
-1. Extract values exactly as they appear, but ensure they are represented as numbers in the JSON. If a value has a comma (like 1,05), treat it as a decimal (1.05).
-2. For exam names, use a consistent name if possible (e.g., "Glicose", "Colesterol Total").
-3. Look for the date of the exam (data de coleta or data de cadastro). Use YYYY-MM-DD format.
-4. Determine status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out.`;
+RULES:
+1. For LABORATORY exams:
+   - Use "value" field with numeric values (convert commas to dots: 1,05 → 1.05)
+   - Set status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out
+   - Include reference_min and reference_max when available
+
+2. For IMAGING exams (Raio-X, Tomografia, Ressonância, Ultrassom):
+   - Use "text_value" for the findings (e.g., "Sem alterações", "Consolidação em lobo inferior")
+   - Set status to "normal" if no abnormalities, "abnormal" if any finding
+   - Include "description" with detailed findings
+   - Include "conclusion" with the radiologist's impression
+
+3. For PATHOLOGY exams (Biópsias, Citologia):
+   - Use "text_value" for the diagnosis (e.g., "Adenocarcinoma", "Hiperplasia benigna")
+   - Set status to "normal" for benign findings, "abnormal" for malignant/concerning findings
+   - Include "description" with microscopic findings
+   - Include "conclusion" with the pathologist's diagnosis
+
+4. Extract the exam date (look for "data de coleta", "data do exame", "data de cadastro")
+5. Extract the laboratory/clinic name`;
+
 
     // Use Google AI Direct API
     const geminiResponse = await fetch(geminiUrl, {
@@ -229,24 +266,42 @@ IMPORTANT:
     // Insert exam results
     if (parsedData.results && parsedData.results.length > 0) {
       console.log(`Preparing to insert ${parsedData.results.length} results...`);
-      // Filter out results with missing required fields and add defaults
+      console.log(`Exam type detected: ${parsedData.exam_type || 'laboratory'}`);
+
+      // Filter out results with missing required fields - accept either value OR text_value
       const validResults = parsedData.results.filter(result =>
-        result.name && result.value !== undefined && result.value !== null
+        result.name && (
+          (result.value !== undefined && result.value !== null) ||
+          (result.text_value !== undefined && result.text_value !== null)
+        )
       );
       console.log(`After filtering: ${validResults.length} valid results`);
 
-      const examResults = validResults.map(result => ({
-        exam_id: examId,
-        user_id: user.id,
-        name: normalizeExamName(result.name),
-        value: parseLocaleNumber(result.value),
-        unit: result.unit?.trim() || '-',
-        reference_min: result.reference_min ?? null,
-        reference_max: result.reference_max ?? null,
-        category: result.category?.trim() || 'Geral',
-        status: result.status || 'healthy',
-        exam_date: parsedData.exam_date || new Date().toISOString().split('T')[0]
-      }));
+      const examResults = validResults.map(result => {
+        // Determine if this is a numeric or text-based result
+        const isNumeric = result.value !== undefined && result.value !== null;
+        const examType = result.exam_type || parsedData.exam_type || 'laboratory';
+
+        return {
+          exam_id: examId,
+          user_id: user.id,
+          name: normalizeExamName(result.name),
+          // For numeric results, use the value; for text results, use 0 as placeholder
+          value: isNumeric ? parseLocaleNumber(result.value ?? 0) : 0,
+          // Store the text value for imaging/pathology exams
+          text_value: result.text_value?.trim() || null,
+          unit: result.unit?.trim() || (isNumeric ? '-' : null),
+          reference_min: result.reference_min ?? null,
+          reference_max: result.reference_max ?? null,
+          category: result.category?.trim() || 'Geral',
+          status: result.status || (isNumeric ? 'healthy' : 'normal'),
+          exam_type: examType,
+          description: result.description?.trim() || null,
+          conclusion: result.conclusion?.trim() || null,
+          exam_date: parsedData.exam_date || new Date().toISOString().split('T')[0]
+        };
+      });
+
 
       console.log('First result to insert:', JSON.stringify(examResults[0], null, 2));
 

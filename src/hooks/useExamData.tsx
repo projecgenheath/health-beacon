@@ -10,12 +10,16 @@ interface ExamResultRow {
   exam_id: string;
   name: string;
   value: number;
+  text_value?: string | null;      // Para exames de imagem/patologia
   unit: string;
   reference_min: number | null;
   reference_max: number | null;
   status: string;
   exam_date: string;
   category: string | null;
+  exam_type?: string | null;       // laboratory, imaging, pathology
+  description?: string | null;
+  conclusion?: string | null;
 }
 
 export const useExamData = () => {
@@ -87,12 +91,16 @@ export const useExamData = () => {
         examId: row.exam_id,
         name: row.name,
         value: Number(row.value),
+        textValue: row.text_value ?? null,
         unit: row.unit,
         referenceMin: row.reference_min ?? 0,
         referenceMax: row.reference_max ?? 100,
         status: row.status as ExamStatus,
         date: row.exam_date,
         category: row.category ?? 'Geral',
+        examType: (row.exam_type as 'laboratory' | 'imaging' | 'pathology') ?? 'laboratory',
+        description: row.description ?? null,
+        conclusion: row.conclusion ?? null,
         fileUrl: row.exams?.file_url ?? null,
         fileName: row.exams?.file_name ?? null,
       }));

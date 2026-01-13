@@ -19,6 +19,9 @@ import {
     ChevronDown,
     ChevronUp,
     Sparkles,
+    Scan,
+    Microscope,
+    FileText,
 } from 'lucide-react';
 import { ExamResult, ExamHistory } from '@/types/exam';
 
@@ -37,10 +40,11 @@ interface ExamResultsListProps {
 const getStatusConfig = (status: string) => {
     switch (status) {
         case 'healthy':
+        case 'normal':
             return {
                 color: 'bg-status-healthy/10 text-status-healthy border-status-healthy/20',
                 gradient: 'from-status-healthy/20 to-status-healthy/5',
-                label: 'Normal',
+                label: status === 'normal' ? 'Normal' : 'Saudável',
                 icon: TrendingUp,
                 dotColor: 'bg-status-healthy',
             };
@@ -53,10 +57,11 @@ const getStatusConfig = (status: string) => {
                 dotColor: 'bg-status-warning',
             };
         case 'danger':
+        case 'abnormal':
             return {
                 color: 'bg-status-danger/10 text-status-danger border-status-danger/20',
                 gradient: 'from-status-danger/20 to-status-danger/5',
-                label: 'Alterado',
+                label: status === 'abnormal' ? 'Alterado' : 'Crítico',
                 icon: TrendingDown,
                 dotColor: 'bg-status-danger',
             };
@@ -81,11 +86,40 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
     const statusConfig = getStatusConfig(exam.status);
     const StatusIcon = statusConfig.icon;
 
-    // Calculate percentage within reference range
-    const rangePercentage = exam.referenceMax !== exam.referenceMin
+    // Determine exam type and icon
+    const examType = exam.examType || 'laboratory';
+    const isLabExam = examType === 'laboratory';
+    const isImagingExam = examType === 'imaging';
+    const isPathologyExam = examType === 'pathology';
+
+    // Get appropriate icon based on exam type
+    const getExamIcon = () => {
+        if (isImagingExam) return Scan;
+        if (isPathologyExam) return Microscope;
+        return Beaker;
+    };
+    const ExamIcon = getExamIcon();
+
+    // Calculate percentage within reference range (only for lab exams)
+    const rangePercentage = isLabExam && exam.referenceMax !== exam.referenceMin
         ? ((exam.value - exam.referenceMin) / (exam.referenceMax - exam.referenceMin)) * 100
         : 50;
     const clampedPercentage = Math.max(0, Math.min(100, rangePercentage));
+
+    // Get status color classes
+    const getStatusColorClass = () => {
+        if (['healthy', 'normal'].includes(exam.status)) return 'text-status-healthy';
+        if (exam.status === 'warning') return 'text-status-warning';
+        if (['danger', 'abnormal'].includes(exam.status)) return 'text-status-danger';
+        return 'text-muted-foreground';
+    };
+
+    const getGlowClass = () => {
+        if (['healthy', 'normal'].includes(exam.status)) return 'from-status-healthy/20 to-status-healthy/5 shadow-status-healthy/20';
+        if (exam.status === 'warning') return 'from-status-warning/20 to-status-warning/5 shadow-status-warning/20';
+        if (['danger', 'abnormal'].includes(exam.status)) return 'from-status-danger/20 to-status-danger/5 shadow-status-danger/20';
+        return 'from-muted/20 to-muted/5';
+    };
 
     return (
         <Card className={cn(
@@ -105,18 +139,11 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                     <div className={cn(
                         'relative h-14 w-14 rounded-2xl flex items-center justify-center flex-shrink-0',
                         'bg-gradient-to-br shadow-lg',
-                        exam.status === 'healthy' && 'from-status-healthy/20 to-status-healthy/5 shadow-status-healthy/20',
-                        exam.status === 'warning' && 'from-status-warning/20 to-status-warning/5 shadow-status-warning/20',
-                        exam.status === 'danger' && 'from-status-danger/20 to-status-danger/5 shadow-status-danger/20',
+                        getGlowClass()
                     )}>
-                        <Beaker className={cn(
-                            'h-7 w-7',
-                            exam.status === 'healthy' && 'text-status-healthy',
-                            exam.status === 'warning' && 'text-status-warning',
-                            exam.status === 'danger' && 'text-status-danger',
-                        )} />
-                        {/* Pulse animation for danger status */}
-                        {exam.status === 'danger' && (
+                        <ExamIcon className={cn('h-7 w-7', getStatusColorClass())} />
+                        {/* Pulse animation for abnormal/danger status */}
+                        {['danger', 'abnormal'].includes(exam.status) && (
                             <span className="absolute inset-0 rounded-2xl animate-ping bg-status-danger/20" />
                         )}
                     </div>
@@ -124,9 +151,16 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                     {/* Content */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-lg font-bold text-foreground truncate">
-                                {exam.name}
-                            </h4>
+                            <div className="flex items-center gap-2">
+                                <h4 className="text-lg font-bold text-foreground truncate">
+                                    {exam.name}
+                                </h4>
+                                {!isLabExam && (
+                                    <Badge variant="secondary" className="text-xs">
+                                        {isImagingExam ? 'Imagem' : 'Patologia'}
+                                    </Badge>
+                                )}
+                            </div>
                             <Badge
                                 variant="outline"
                                 className={cn(
@@ -139,38 +173,71 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                             </Badge>
                         </div>
 
-                        {/* Value display with animation */}
-                        <div className="flex items-baseline gap-3 mb-3">
-                            <span className={cn(
-                                'text-3xl font-bold tabular-nums',
-                                exam.status === 'healthy' && 'text-status-healthy',
-                                exam.status === 'warning' && 'text-status-warning',
-                                exam.status === 'danger' && 'text-status-danger',
-                            )}>
-                                {exam.value}
-                            </span>
-                            <span className="text-lg text-muted-foreground">{exam.unit}</span>
-                        </div>
+                        {/* Display based on exam type */}
+                        {isLabExam ? (
+                            <>
+                                {/* Value display for laboratory exams */}
+                                <div className="flex items-baseline gap-3 mb-3">
+                                    <span className={cn('text-3xl font-bold tabular-nums', getStatusColorClass())}>
+                                        {exam.value}
+                                    </span>
+                                    <span className="text-lg text-muted-foreground">{exam.unit}</span>
+                                </div>
 
-                        {/* Reference range bar */}
-                        <div className="mb-3">
-                            <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                                <span>Ref: {exam.referenceMin}</span>
-                                <span>{exam.referenceMax} {exam.unit}</span>
-                            </div>
-                            <div className="relative h-2 rounded-full bg-muted/50 overflow-hidden">
-                                {/* Normal range indicator */}
-                                <div className="absolute inset-0 bg-gradient-to-r from-status-healthy/30 via-status-healthy/50 to-status-healthy/30 rounded-full" />
-                                {/* Current value marker */}
-                                <div
-                                    className={cn(
-                                        'absolute top-0 h-full w-1 rounded-full transition-all duration-500',
-                                        statusConfig.dotColor
-                                    )}
-                                    style={{ left: `${clampedPercentage}%`, transform: 'translateX(-50%)' }}
-                                />
-                            </div>
-                        </div>
+                                {/* Reference range bar */}
+                                <div className="mb-3">
+                                    <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                                        <span>Ref: {exam.referenceMin}</span>
+                                        <span>{exam.referenceMax} {exam.unit}</span>
+                                    </div>
+                                    <div className="relative h-2 rounded-full bg-muted/50 overflow-hidden">
+                                        {/* Normal range indicator */}
+                                        <div className="absolute inset-0 bg-gradient-to-r from-status-healthy/30 via-status-healthy/50 to-status-healthy/30 rounded-full" />
+                                        {/* Current value marker */}
+                                        <div
+                                            className={cn(
+                                                'absolute top-0 h-full w-1 rounded-full transition-all duration-500',
+                                                statusConfig.dotColor
+                                            )}
+                                            style={{ left: `${clampedPercentage}%`, transform: 'translateX(-50%)' }}
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Text value display for imaging/pathology exams */}
+                                {exam.textValue && (
+                                    <div className="mb-3 p-3 rounded-lg bg-muted/30 border border-border/50">
+                                        <p className={cn('text-base font-medium', getStatusColorClass())}>
+                                            {exam.textValue}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Description/Findings */}
+                                {exam.description && (
+                                    <div className="mb-3">
+                                        <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                                            <FileText className="h-3 w-3" /> Achados
+                                        </p>
+                                        <p className="text-sm text-foreground/80 line-clamp-3">
+                                            {exam.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Conclusion */}
+                                {exam.conclusion && (
+                                    <div className="mb-3 p-2 rounded-lg bg-primary/5 border border-primary/10">
+                                        <p className="text-xs text-primary mb-1 font-medium">Conclusão</p>
+                                        <p className="text-sm text-foreground">
+                                            {exam.conclusion}
+                                        </p>
+                                    </div>
+                                )}
+                            </>
+                        )}
 
                         {/* Metadata */}
                         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
@@ -189,8 +256,8 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                     </div>
                 </div>
 
-                {/* Expandable chart section */}
-                {history && history.history.length > 1 && (
+                {/* Expandable chart section - only for lab exams with history */}
+                {history && history.history.length > 1 && examType === 'laboratory' && (
                     <>
                         <Button
                             variant="ghost"
