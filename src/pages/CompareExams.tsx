@@ -383,7 +383,7 @@ const CompareExams = () => {
     <div className="animate-fade-in">
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <Button variant="ghost" onClick={() => navigate('/')} className="btn-press hover-glow">
+          <Button variant="ghost" onClick={() => navigate('/dashboard')} className="btn-press hover-glow">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Voltar
           </Button>

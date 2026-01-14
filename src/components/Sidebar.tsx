@@ -32,9 +32,9 @@ export const Sidebar = () => {
     const location = useLocation();
 
     const navItems = [
-        { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-        { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-        { path: '/compare', label: 'Comparar', icon: GitCompare },
+        { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+        { path: '/dashboard/compare', label: 'Comparar', icon: GitCompare },
         { path: '/profile', label: 'Meu Perfil', icon: User },
     ];
 

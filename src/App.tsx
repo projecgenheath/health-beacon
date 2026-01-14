@@ -14,6 +14,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 // Eager load critical routes
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Landing from "./pages/Landing";
 
 // Lazy load non-critical routes for better initial performance
 const Index = lazy(() => import("./pages/Index"));
@@ -21,6 +22,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const ExamReport = lazy(() => import("./pages/ExamReport"));
 const CompareExams = lazy(() => import("./pages/CompareExams"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const SharedExamView = lazy(() => import("./pages/SharedExamView"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,10 +51,13 @@ const App = () => (
             >
               <Suspense fallback={<LoadingScreen message="Carregando aplicação..." />}>
                 <Routes>
+                  {/* Public routes */}
+                  <Route path="/" element={<Landing />} />
                   <Route path="/auth" element={<Auth />} />
 
+                  {/* Protected routes with MainLayout */}
                   <Route
-                    path="/"
+                    path="/dashboard"
                     element={
                       <ProtectedRoute>
                         <MainLayout />
@@ -81,6 +86,9 @@ const App = () => (
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Public shared exam view */}
+                  <Route path="/shared/:token" element={<SharedExamView />} />
 
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />

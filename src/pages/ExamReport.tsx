@@ -57,7 +57,7 @@ export default function ExamReport() {
 
       if (examError) throw examError;
       if (!examData) {
-        navigate('/');
+        navigate('/dashboard');
         return;
       }
 

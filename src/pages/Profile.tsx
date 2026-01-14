@@ -293,7 +293,7 @@ const Profile = () => {
       <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="container flex h-16 items-center gap-4">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/dashboard')}
             className="p-2 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -706,7 +706,7 @@ const Profile = () => {
           <div className="h-16 md:hidden"></div>
         </form>
       </main>
-    </div>
+    </div >
   );
 };
 

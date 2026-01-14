@@ -53,6 +53,86 @@ function parseLocaleNumber(value: string | number): number {
   return isNaN(parsed) ? 0 : parsed;
 }
 
+// Biological validation - detect impossible or highly unlikely values
+interface ValidationResult {
+  isValid: boolean;
+  warning?: string;
+  correctedValue?: number;
+}
+
+const BIOLOGICAL_LIMITS: Record<string, { min: number; max: number; unit?: string }> = {
+  'GLICOSE': { min: 10, max: 800, unit: 'mg/dL' },
+  'GLICEMIA': { min: 10, max: 800, unit: 'mg/dL' },
+  'HEMOGLOBINA': { min: 3, max: 25, unit: 'g/dL' },
+  'HEMATOCRITO': { min: 10, max: 70, unit: '%' },
+  'COLESTEROL TOTAL': { min: 50, max: 600, unit: 'mg/dL' },
+  'COLESTEROL': { min: 50, max: 600, unit: 'mg/dL' },
+  'LDL': { min: 10, max: 400, unit: 'mg/dL' },
+  'HDL': { min: 10, max: 150, unit: 'mg/dL' },
+  'TRIGLICERIDES': { min: 20, max: 2000, unit: 'mg/dL' },
+  'TRIGLICERÍDEOS': { min: 20, max: 2000, unit: 'mg/dL' },
+  'CREATININA': { min: 0.1, max: 20, unit: 'mg/dL' },
+  'UREIA': { min: 5, max: 300, unit: 'mg/dL' },
+  'TGO': { min: 1, max: 2000, unit: 'U/L' },
+  'AST': { min: 1, max: 2000, unit: 'U/L' },
+  'TGP': { min: 1, max: 2000, unit: 'U/L' },
+  'ALT': { min: 1, max: 2000, unit: 'U/L' },
+  'TSH': { min: 0.01, max: 100, unit: 'mUI/L' },
+  'T4 LIVRE': { min: 0.1, max: 10, unit: 'ng/dL' },
+  'VITAMINA D': { min: 1, max: 200, unit: 'ng/mL' },
+  'VITAMINA B12': { min: 50, max: 10000, unit: 'pg/mL' },
+  'FERRITINA': { min: 1, max: 5000, unit: 'ng/mL' },
+  'FERRO SERICO': { min: 5, max: 500, unit: 'µg/dL' },
+  'HEMOGLOBINA GLICADA': { min: 3, max: 20, unit: '%' },
+  'HBA1C': { min: 3, max: 20, unit: '%' },
+  'PLAQUETAS': { min: 10000, max: 1000000, unit: '/mm³' },
+  'LEUCOCITOS': { min: 500, max: 100000, unit: '/mm³' },
+  'LEUCÓCITOS': { min: 500, max: 100000, unit: '/mm³' },
+  'ACIDO URICO': { min: 0.5, max: 20, unit: 'mg/dL' },
+  'CALCIO': { min: 5, max: 20, unit: 'mg/dL' },
+  'SODIO': { min: 100, max: 180, unit: 'mEq/L' },
+  'POTASSIO': { min: 2, max: 10, unit: 'mEq/L' },
+};
+
+function validateBiologicalValue(examName: string, value: number): ValidationResult {
+  const normalizedName = examName.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Find matching limit
+  for (const [key, limits] of Object.entries(BIOLOGICAL_LIMITS)) {
+    if (normalizedName.includes(key) || key.includes(normalizedName)) {
+      if (value < limits.min || value > limits.max) {
+        console.warn(`⚠️ Value validation warning: ${examName} = ${value} is outside biological range [${limits.min}-${limits.max}]`);
+        return {
+          isValid: false,
+          warning: `Value ${value} for ${examName} is outside expected range [${limits.min}-${limits.max}]`,
+        };
+      }
+      break;
+    }
+  }
+
+  // Check for obviously wrong values (negative for most exams, extremely high values)
+  if (value < 0) {
+    console.warn(`⚠️ Negative value detected for ${examName}: ${value}`);
+    return {
+      isValid: false,
+      warning: `Negative value ${value} for ${examName}`,
+      correctedValue: Math.abs(value),
+    };
+  }
+
+  if (value > 1000000) {
+    console.warn(`⚠️ Extremely high value detected for ${examName}: ${value}`);
+    return {
+      isValid: false,
+      warning: `Extremely high value ${value} for ${examName}`,
+    };
+  }
+
+  return { isValid: true };
+}
+
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -282,12 +362,27 @@ RULES:
         const isNumeric = result.value !== undefined && result.value !== null;
         const examType = result.exam_type || parsedData.exam_type || 'laboratory';
 
+        // Parse the value
+        let parsedValue = isNumeric ? parseLocaleNumber(result.value ?? 0) : 0;
+
+        // Validate biological plausibility for numeric results
+        if (isNumeric && parsedValue > 0) {
+          const validation = validateBiologicalValue(result.name, parsedValue);
+          if (!validation.isValid) {
+            console.warn(`⚠️ Validation warning for ${result.name}: ${validation.warning}`);
+            // Use corrected value if available
+            if (validation.correctedValue !== undefined) {
+              parsedValue = validation.correctedValue;
+            }
+          }
+        }
+
         return {
           exam_id: examId,
           user_id: user.id,
           name: normalizeExamName(result.name),
           // For numeric results, use the value; for text results, use 0 as placeholder
-          value: isNumeric ? parseLocaleNumber(result.value ?? 0) : 0,
+          value: parsedValue,
           // Store the text value for imaging/pathology exams
           text_value: result.text_value?.trim() || null,
           unit: result.unit?.trim() || (isNumeric ? '-' : null),
