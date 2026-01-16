@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
-        name: "MeuExame - Acompanhe sua Saúde",
-        short_name: "MeuExame",
-        description: "Analise seus exames médicos com inteligência artificial",
+        name: "BHB - Biomedical Health Bank",
+        short_name: "BHB",
+        description: "Your personal biomedical health repository with AI-powered exam analysis",
         theme_color: "#6366f1",
         background_color: "#0f172a",
         display: "standalone",

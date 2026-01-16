@@ -190,7 +190,7 @@ const Landing = () => {
                         <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
                             <Activity className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <span className="text-xl font-bold">MeuExame</span>
+                        <span className="text-xl font-bold">BHB</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <ThemeToggle />

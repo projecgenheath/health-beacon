@@ -66,8 +66,8 @@ export const Sidebar = () => {
                                 <Activity className="h-5 w-5 text-primary-foreground" />
                             </div>
                             <div>
-                                <h1 className="text-base font-bold text-foreground leading-tight">MeuExame</h1>
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Health Beacon</p>
+                                <h1 className="text-base font-bold text-foreground leading-tight">BHB</h1>
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Biomedical Health Bank</p>
                             </div>
                         </div>
                     )}
