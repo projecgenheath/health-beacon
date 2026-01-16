@@ -294,7 +294,7 @@ export const SharedExamView = () => {
                 <div className="text-center text-sm text-muted-foreground py-4">
                     <p>
                         Gerado por{' '}
-                        <span className="font-semibold text-primary">MeuExame</span>
+                        <span className="font-semibold text-primary">BHB</span>
                     </p>
                 </div>
             </div>

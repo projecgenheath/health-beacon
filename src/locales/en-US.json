@@ -238,7 +238,7 @@
         "exportSuccess": "Export started. You will receive an email with the download link."
     },
     "onboarding": {
-        "welcome": "Welcome to MeuExame!",
+        "welcome": "Welcome to BHB!",
         "step1Title": "Upload Exams",
         "step1Desc": "Upload your exams in PDF or image format. Our AI will automatically extract and organize all results.",
         "step2Title": "Track Your Health",

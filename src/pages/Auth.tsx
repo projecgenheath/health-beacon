@@ -215,7 +215,7 @@ const Auth = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4 animate-float hover:scale-105 transition-spring">
             <Activity className="h-10 w-10 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold text-foreground">MeuExame</h1>
+          <h1 className="text-4xl font-bold text-foreground">BHB</h1>
           <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 

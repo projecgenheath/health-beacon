@@ -2,7 +2,7 @@ export const storePendingFile = async (file: File): Promise<void> => {
     return new Promise((resolve, reject) => {
         // Wrap in a try-catch for immediate failures
         try {
-            const request = indexedDB.open('HealthBeaconUploads', 2);
+            const request = indexedDB.open('BHBUploads', 2);
 
             request.onupgradeneeded = (event) => {
                 console.log('[Storage] Upgrading IndexedDB...');
@@ -63,7 +63,7 @@ export const storePendingFile = async (file: File): Promise<void> => {
 export const getPendingFile = async (): Promise<File | null> => {
     return new Promise((resolve) => {
         try {
-            const request = indexedDB.open('HealthBeaconUploads', 2);
+            const request = indexedDB.open('BHBUploads', 2);
 
             request.onupgradeneeded = (event) => {
                 console.log('[Storage] Upgrading IndexedDB (read)...');
@@ -134,7 +134,7 @@ export const getPendingFile = async (): Promise<File | null> => {
 export const clearPendingFile = async (): Promise<void> => {
     return new Promise((resolve) => {
         try {
-            const request = indexedDB.open('HealthBeaconUploads', 2);
+            const request = indexedDB.open('BHBUploads', 2);
 
             request.onupgradeneeded = (event) => {
                 console.log('[Storage] Upgrading IndexedDB (clear)...');

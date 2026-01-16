@@ -238,7 +238,7 @@
         "exportSuccess": "Exportação iniciada. Você receberá um email com o link para download."
     },
     "onboarding": {
-        "welcome": "Bem-vindo ao MeuExame!",
+        "welcome": "Bem-vindo ao BHB!",
         "step1Title": "Upload de Exames",
         "step1Desc": "Faça upload dos seus exames em PDF ou imagem. Nossa IA irá extrair e organizar todos os resultados automaticamente.",
         "step2Title": "Acompanhe sua Saúde",
