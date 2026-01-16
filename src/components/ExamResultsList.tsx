@@ -121,12 +121,18 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
         return 'from-muted/20 to-muted/5';
     };
 
+    const hasHistory = history && history.history.length > 1 && examType === 'laboratory';
+
     return (
-        <Card className={cn(
-            'group overflow-hidden transition-all duration-500 hover:shadow-xl',
-            'backdrop-blur-xl bg-card/80 border-border/50',
-            'hover:border-primary/30 hover:bg-card/90'
-        )}>
+        <Card
+            className={cn(
+                'group overflow-hidden transition-all duration-500 hover:shadow-xl',
+                'backdrop-blur-xl bg-card/80 border-border/50',
+                'hover:border-primary/30 hover:bg-card/90',
+                hasHistory && 'cursor-pointer'
+            )}
+            onClick={() => hasHistory && setExpanded(!expanded)}
+        >
             {/* Gradient overlay */}
             <div className={cn(
                 'absolute inset-0 bg-gradient-to-br opacity-30 pointer-events-none',
@@ -257,21 +263,21 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                 </div>
 
                 {/* Expandable chart section - only for lab exams with history */}
-                {history && history.history.length > 1 && examType === 'laboratory' && (
+                {hasHistory && (
                     <>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setExpanded(!expanded)}
-                            className="w-full mt-4 text-muted-foreground hover:text-foreground gap-2"
-                        >
+                        <div className="w-full mt-4 text-muted-foreground flex items-center justify-center gap-2 py-2 rounded-lg bg-muted/5 group-hover:bg-muted/10 transition-colors">
                             <Sparkles className="h-4 w-4" />
-                            {expanded ? 'Ocultar histórico' : 'Ver evolução'}
+                            <span className="text-sm font-medium">
+                                {expanded ? 'Ocultar histórico' : 'Ver evolução'}
+                            </span>
                             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
+                        </div>
 
                         {expanded && (
-                            <div className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-top-2 duration-300">
+                            <div
+                                className="mt-4 pt-4 border-t border-border/50 animate-in slide-in-from-top-2 duration-300 cursor-auto"
+                                onClick={(e) => e.stopPropagation()}
+                            >
                                 <ImprovedExamChart history={history} showDetails={true} />
                             </div>
                         )}

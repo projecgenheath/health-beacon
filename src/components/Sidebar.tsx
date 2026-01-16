@@ -24,9 +24,10 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { clearPendingFile } from '@/lib/storage';
 
 export const Sidebar = () => {
-    const [isCollapsed, setIsCollapsed] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(true);
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -40,6 +41,8 @@ export const Sidebar = () => {
 
     const handleSignOut = async () => {
         await signOut();
+        await clearPendingFile();
+        navigate('/');
     };
 
     return (

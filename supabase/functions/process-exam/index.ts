@@ -27,6 +27,8 @@ interface ParsedExamData {
   lab_name: string | null;
   exam_date: string | null;
   exam_type: ExamType;
+  patient_name: string | null;     // Extracted patient name
+  patient_dob: string | null;      // Extracted patient date of birth
   results: ExamResult[];
   general_conclusion?: string;     // Conclusão geral do exame
 }
@@ -217,6 +219,8 @@ Return ONLY valid JSON in this exact format, with no extra text or markdown:
 {
   "lab_name": "string or null",
   "exam_date": "YYYY-MM-DD or null",
+  "patient_name": "string or null (full name of the patient as written in the doc)",
+  "patient_dob": "YYYY-MM-DD or null (patient date of birth if found)",
   "exam_type": "laboratory" | "imaging" | "pathology",
   "general_conclusion": "string or null (overall conclusion if available)",
   "results": [
@@ -255,7 +259,8 @@ RULES:
    - Include "conclusion" with the pathologist's diagnosis
 
 4. Extract the exam date (look for "data de coleta", "data do exame", "data de cadastro")
-5. Extract the laboratory/clinic name`;
+5. Extract the laboratory/clinic name
+6. Extract the patient's full name and date of birth`;
 
 
     // Use Google AI Direct API
@@ -324,6 +329,67 @@ RULES:
       Deno.env.get('SUPABASE_URL') ?? '',
       serviceRoleKey
     );
+
+    // --- PATIENT VALIDATION ---
+    console.log('Validating patient data...');
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('full_name, birth_date')
+      .eq('user_id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+    } else if (profile && (profile.full_name || profile.birth_date)) {
+      const normalizedProfileName = profile.full_name ? normalizeExamName(profile.full_name) : null;
+      const normalizedExtractedName = parsedData.patient_name ? normalizeExamName(parsedData.patient_name) : null;
+
+      const profileDob = profile.birth_date;
+      const extractedDob = parsedData.patient_dob;
+
+      let nameMatches = true;
+      let dobMatches = true;
+
+      if (normalizedProfileName && normalizedExtractedName) {
+        // Simple comparison, we could use Levenshtein distance for more robust matching if needed
+        nameMatches = normalizedExtractedName.includes(normalizedProfileName) ||
+          normalizedProfileName.includes(normalizedExtractedName);
+
+        // If no direct includes, check if major parts overlap
+        if (!nameMatches) {
+          const profileParts = normalizedProfileName.split(' ').filter(p => p.length > 2);
+          const extractedParts = normalizedExtractedName.split(' ').filter(p => p.length > 2);
+          const matchingParts = profileParts.filter(part => extractedParts.includes(part));
+          nameMatches = matchingParts.length >= 2; // At least two significant name parts match
+        }
+      }
+
+      if (profileDob && extractedDob) {
+        dobMatches = profileDob === extractedDob;
+      }
+
+      console.log(`Validation results: Name match: ${nameMatches}, DOB match: ${dobMatches}`);
+      console.log(`Profile: ${profile.full_name} (${profileDob}), Extracted: ${parsedData.patient_name} (${extractedDob})`);
+
+      if (!nameMatches || !dobMatches) {
+        // If it's a clear mismatch, we stop here
+        console.error('Patient mismatch detected!');
+        return new Response(
+          JSON.stringify({
+            error: 'Documento não pertence ao paciente cadastrado.',
+            details: {
+              name_match: nameMatches,
+              dob_match: dobMatches,
+              detected_patient: parsedData.patient_name,
+              detected_dob: parsedData.patient_dob
+            }
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      console.log('User profile incomplete, skipping patient validation or allowing it.');
+    }
 
     // Update the exam record with extracted info (but not processed yet)
     console.log('Updating exam record with lab info...');

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Upload, FileText, Camera, X, Loader2, CheckCircle, AlertCircle, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useSyncGoalsWithExams } from '@/hooks/useSyncGoalsWithExams';
 import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
+import { getPendingFile, clearPendingFile } from '@/lib/storage';
 
 interface UploadSectionProps {
   onUploadComplete?: () => void;
@@ -44,6 +45,70 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const { syncGoals } = useSyncGoalsWithExams();
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
+  // Log when component mounts
+  useEffect(() => {
+    console.log('=== [UPLOAD_SECTION] Component mounted ===');
+    console.log('[UPLOAD_SECTION] User:', user ? 'Logged in' : 'Not logged in');
+    return () => {
+      console.log('=== [UPLOAD_SECTION] Component unmounted ===');
+    };
+  }, []);
+
+  // Recovery Effect: Check for pending file from IndexedDB after login
+  useEffect(() => {
+    const checkPendingFile = async () => {
+      console.log('=== [UPLOAD_SECTION] Recovery check started ===');
+      console.log('[UPLOAD_SECTION] User state:', user ? `User ID: ${user.id}` : 'No user');
+
+      if (!user) {
+        console.log('[UPLOAD_SECTION] No user, skipping recovery check');
+        return;
+      }
+
+      console.log('[UPLOAD_SECTION] User logged in, checking IndexedDB...');
+      const pendingFile = await getPendingFile();
+
+      if (pendingFile) {
+        console.log('[UPLOAD_SECTION] ✓✓✓ Pending file found:', pendingFile.name);
+        console.log('[UPLOAD_SECTION] File details - Type:', pendingFile.type, 'Size:', pendingFile.size);
+
+        // Add file to state
+        console.log('[UPLOAD_SECTION] Creating preview...');
+        const preview = await createPreview(pendingFile);
+        const fileWithPreview: FileWithPreview = {
+          file: pendingFile,
+          preview,
+          status: 'pending',
+          progress: 0,
+        };
+
+        console.log('[UPLOAD_SECTION] Setting file in component state...');
+        setFiles([fileWithPreview]);
+        console.log('[UPLOAD_SECTION] ✓ File added to state');
+
+        // Clear from storage
+        console.log('[UPLOAD_SECTION] Clearing from IndexedDB...');
+        await clearPendingFile();
+        console.log('[UPLOAD_SECTION] ✓ Cleared from IndexedDB');
+
+        // Set auto-process flag
+        sessionStorage.setItem('shouldAutoProcess', 'true');
+        console.log('[UPLOAD_SECTION] ✓ Auto-process flag set in sessionStorage');
+
+        toast({
+          title: 'Exame Recuperado',
+          description: 'Iniciando processamento automático...',
+        });
+        console.log('=== [UPLOAD_SECTION] Recovery completed successfully ===');
+      } else {
+        console.log('[UPLOAD_SECTION] No pending file in IndexedDB');
+        console.log('=== [UPLOAD_SECTION] Recovery check completed - no file ===');
+      }
+    };
+
+    checkPendingFile();
+  }, [user, toast]);
+
   const createPreview = (file: File): Promise<string | null> => {
     return new Promise((resolve) => {
       if (file.type.startsWith('image/')) {
@@ -58,11 +123,13 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   };
 
   const addFiles = async (newFiles: File[]) => {
+    console.log('[Upload] Adding files:', newFiles.length);
     const validFiles = newFiles.filter(
       (file) => file.type === 'application/pdf' || file.type.startsWith('image/')
     );
 
     if (validFiles.length === 0) {
+      console.warn('[Upload] No valid files found');
       toast({
         title: 'Formato inválido',
         description: 'Apenas PDF ou imagens são aceitos',
@@ -80,7 +147,14 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
       }))
     );
 
-    setFiles((prev) => [...prev, ...filesWithPreviews]);
+    console.log('[Upload] Files prepared with previews:', filesWithPreviews.length);
+
+    setFiles((prev) => {
+      const updated = [...prev, ...filesWithPreviews];
+      console.log('[Upload] State updated. Total files:', updated.length);
+      return updated;
+    });
+
     toast({
       title: 'Arquivo adicionado',
       description: `${validFiles.length} arquivo(s) pronto(s) para processamento`,
@@ -130,8 +204,12 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
     setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, ...updates } : f)));
   };
 
-  const processFiles = async () => {
+  // Process files function with useCallback for stable reference
+  const processFiles = useCallback(async (filesToProcess?: FileWithPreview[]) => {
+    // Use provided files or get current files from state
+    const currentFiles = filesToProcess || files;
     if (!user) {
+      console.error('[Upload] Process called without user session');
       toast({
         title: 'Erro',
         description: 'Você precisa estar logado para processar exames',
@@ -140,24 +218,53 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
       return;
     }
 
+    const pendingFiles = currentFiles.filter(f => f.status === 'pending');
+    console.log('[Upload] Files to process:', pendingFiles.length);
+
+    if (pendingFiles.length === 0) {
+      console.warn('[Upload] No pending files to process');
+      return;
+    }
+
     setIsProcessing(true);
     setOverallProgress(0);
     let successCount = 0;
     let errorCount = 0;
 
-    const totalFiles = files.length;
+    // We need to use handles to update status consistently even if state update is lagging
+    const currentFilesList = [...currentFiles];
 
-    for (let i = 0; i < files.length; i++) {
-      const fileData = files[i];
+    const totalFiles = pendingFiles.length;
+
+    for (let i = 0; i < pendingFiles.length; i++) {
+      const fileData = pendingFiles[i];
       const file = fileData.file;
       const baseProgress = (i / totalFiles) * 100;
       const fileProgressWeight = 100 / totalFiles;
 
       try {
         // Step 1: Create exam record
-        updateFileStatus(i, { status: 'uploading', progress: 10 });
         setCurrentStep('uploading');
         setOverallProgress(baseProgress + fileProgressWeight * 0.1);
+
+        // Update local and global state
+        const updateStatus = (updates: Partial<FileWithPreview>) => {
+          setFiles(prev => {
+            // If it's a recovery, the state might be empty or being populated
+            // We find the file by reference or name to be safe
+            const index = prev.findIndex(f => f.file === file || (f.file.name === file.name && f.file.size === file.size));
+            if (index === -1) {
+              // If not found, and we're processing specifically this one, let's keep it in a separate tracking if needed
+              // but usually it should be there by now
+              return prev;
+            }
+            const newFiles = [...prev];
+            newFiles[index] = { ...newFiles[index], ...updates };
+            return newFiles;
+          });
+        };
+
+        updateStatus({ status: 'uploading', progress: 10 });
 
         const { data: examData, error: examError } = await supabase
           .from('exams')
@@ -174,7 +281,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         }
 
         // Step 2: Upload file to storage
-        updateFileStatus(i, { progress: 30 });
+        updateStatus({ progress: 30 });
         setOverallProgress(baseProgress + fileProgressWeight * 0.3);
 
         const filePath = `${user.id}/${examData.id}/${file.name}`;
@@ -203,7 +310,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           .eq('id', examData.id);
 
         // Step 4: Process with AI
-        updateFileStatus(i, { status: 'processing', progress: 50 });
+        updateStatus({ status: 'processing', progress: 50 });
         setCurrentStep('analyzing');
         setOverallProgress(baseProgress + fileProgressWeight * 0.5);
 
@@ -215,12 +322,27 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           },
         });
 
+        // Check for errors in both error field and data.error field
         if (functionError) {
+          console.error('[Upload] Edge function error:', functionError);
           throw new Error(functionError.message || 'Falha ao processar o exame');
         }
 
+        // Check if the response contains an error (for status code errors)
+        if (result && typeof result === 'object' && 'error' in result) {
+          const errorMessage = result.error as string;
+          console.error('[Upload] Edge function returned error:', errorMessage);
+
+          // Special handling for patient mismatch
+          if (errorMessage.includes('não pertence ao paciente')) {
+            throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
+          }
+
+          throw new Error(errorMessage);
+        }
+
         // Step 5: Complete
-        updateFileStatus(i, { status: 'success', progress: 100 });
+        updateStatus({ status: 'success', progress: 100 });
         setCurrentStep('saving');
         setOverallProgress(baseProgress + fileProgressWeight);
 
@@ -228,9 +350,22 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
 
       } catch (error) {
         console.error('Error processing file:', error);
-        updateFileStatus(i, {
-          status: 'error',
-          error: error instanceof Error ? error.message : 'Erro desconhecido',
+        toast({
+          title: 'Erro ao processar arquivo',
+          description: error instanceof Error ? error.message : 'Ocorreu um problema inesperado.',
+          variant: 'destructive',
+        });
+
+        setFiles(prev => {
+          const index = prev.findIndex(f => f.file === file || (f.file.name === file.name && f.file.size === file.size));
+          if (index === -1) return prev;
+          const newFiles = [...prev];
+          newFiles[index] = {
+            ...newFiles[index],
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Erro desconhecido'
+          };
+          return newFiles;
         });
         errorCount++;
       }
@@ -265,7 +400,38 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         variant: 'destructive',
       });
     }
-  };
+  }, [files, user, toast, onUploadComplete, syncGoals]);
+
+  // Auto-process effect: Triggered when files are added and auto-process flag is set
+  useEffect(() => {
+    const shouldProcess = sessionStorage.getItem('shouldAutoProcess') === 'true';
+
+    if (!shouldProcess) {
+      return;
+    }
+
+    if (files.length === 0) {
+      console.log('[Recovery] Auto-process check: No files yet');
+      return;
+    }
+
+    if (isProcessing) {
+      console.log('[Recovery] Auto-process check: Already processing');
+      return;
+    }
+
+    const pendingFiles = files.filter(f => f.status === 'pending');
+    if (pendingFiles.length === 0) {
+      console.log('[Recovery] Auto-process check: No pending files');
+      return;
+    }
+
+    console.log('[Recovery] ✓ Auto-processing triggered with', pendingFiles.length, 'file(s)');
+    sessionStorage.removeItem('shouldAutoProcess');
+    processFiles();
+  }, [files, isProcessing, processFiles]);
+
+
 
   const getStatusIcon = (status: FileWithPreview['status']) => {
     switch (status) {

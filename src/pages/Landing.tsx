@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,8 @@ import {
     Lock,
     Mail,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { storePendingFile, getPendingFile } from '@/lib/storage';
 
 const Landing = () => {
     const { user, signIn, signInWithGoogle } = useAuth();
@@ -43,11 +45,13 @@ const Landing = () => {
     const [loginEmail, setLoginEmail] = useState('');
     const [loginPassword, setLoginPassword] = useState('');
 
-    // Redirect if already logged in
-    if (user) {
-        navigate('/dashboard');
-        return null;
-    }
+    // Redirect if already logged in - must be in useEffect to avoid setState during render
+    useEffect(() => {
+        if (user) {
+            console.log('[LANDING] User already logged in, redirecting to dashboard...');
+            navigate('/dashboard');
+        }
+    }, [user, navigate]);
 
     const handleDragEnter = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -77,16 +81,47 @@ const Landing = () => {
         }
     }, []);
 
-    const handleFileSelect = (file: File) => {
+    const handleFileSelect = async (file: File) => {
+        console.log('=== [LANDING] File selected ===');
+        console.log('[LANDING] File name:', file.name);
+        console.log('[LANDING] File type:', file.type);
+        console.log('[LANDING] File size:', file.size);
+
         const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
         if (!validTypes.includes(file.type)) {
+            console.error('[LANDING] Invalid file type:', file.type);
             toast.error('Formato inválido. Aceitos: PDF, JPG, PNG');
             return;
         }
 
-        // Store file and show auth modal
+        console.log('[LANDING] ✓ File type valid');
+
+        // 1. Show modal IMMEDIATELY for best UX
+        console.log('[LANDING] Setting pending file in component state...');
         setPendingFile(file);
         setShowAuthModal(true);
+        console.log('[LANDING] ✓ Auth modal opened');
+
+        // 2. Persist in background so it's there after login
+        try {
+            console.log('[LANDING] Attempting to store in IndexedDB...');
+            await storePendingFile(file);
+            console.log('[LANDING] ✓✓✓ File persisted successfully to IndexedDB');
+
+            // Verify it was saved
+            console.log('[LANDING] Verifying storage...');
+            const stored = await getPendingFile();
+            if (stored) {
+                console.log('[LANDING] ✓ Verification successful - file exists in IndexedDB');
+            } else {
+                console.error('[LANDING] ✗ Verification failed - file NOT in IndexedDB!');
+            }
+        } catch (error) {
+            console.error('[LANDING] ✗✗✗ Failed to persist file:', error);
+            // Non-critical: the file is still in 'pendingFile' state for this session
+        }
+
+        console.log('=== [LANDING] File selection complete ===');
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,28 +133,26 @@ const Landing = () => {
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('=== [LANDING] Login initiated ===');
         setIsSubmitting(true);
 
         const { error } = await signIn(loginEmail, loginPassword);
 
         if (error) {
+            console.error('[LANDING] Login failed:', error);
             toast.error('Email ou senha incorretos');
             setIsSubmitting(false);
             return;
         }
 
+        console.log('[LANDING] ✓ Login successful');
+        console.log('[LANDING] Navigating to /dashboard...');
         toast.success('Login realizado com sucesso!');
-        // File will be processed after redirect
-        if (pendingFile) {
-            sessionStorage.setItem('pendingExamFile', pendingFile.name);
-        }
         navigate('/dashboard');
+        console.log('=== [LANDING] Navigation triggered ===');
     };
 
     const handleGoogleLogin = async () => {
-        if (pendingFile) {
-            sessionStorage.setItem('pendingExamFile', pendingFile.name);
-        }
         await signInWithGoogle();
     };
 
@@ -163,14 +196,17 @@ const Landing = () => {
                         </div>
                         <span className="text-xl font-bold">MeuExame</span>
                     </div>
-                    <Button
-                        variant="outline"
-                        className="gap-2"
-                        onClick={() => navigate('/auth')}
-                    >
-                        <Lock className="h-4 w-4" />
-                        Entrar
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <ThemeToggle />
+                        <Button
+                            variant="outline"
+                            className="gap-2"
+                            onClick={() => navigate('/auth')}
+                        >
+                            <Lock className="h-4 w-4" />
+                            Entrar
+                        </Button>
+                    </div>
                 </header>
 
                 {/* Hero Section */}

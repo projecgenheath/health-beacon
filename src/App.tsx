@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { checkAndCleanDatabase } from '@/lib/cleanOldDatabase';
 
 // Eager load critical routes
 import Auth from "./pages/Auth";
@@ -35,71 +36,83 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <ErrorBoundary>
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter
-              future={{
-                v7_startTransition: true,
-                v7_relativeSplatPath: true,
-              }}
-            >
-              <Suspense fallback={<LoadingScreen message="Carregando aplicação..." />}>
-                <Routes>
-                  {/* Public routes */}
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
+const App = () => {
+  // Run database cleanup on app initialization
+  useEffect(() => {
+    console.log('[APP] Initializing application...');
+    checkAndCleanDatabase().then(() => {
+      console.log('[APP] Database check complete');
+    }).catch((error) => {
+      console.error('[APP] Database cleanup failed:', error);
+    });
+  }, []);
 
-                  {/* Protected routes with MainLayout */}
-                  <Route
-                    path="/dashboard"
-                    element={
-                      <ProtectedRoute>
-                        <MainLayout />
-                      </ProtectedRoute>
-                    }
-                  >
-                    <Route index element={<Index />} />
-                    <Route path="analytics" element={<Analytics />} />
-                    <Route path="compare" element={<CompareExams />} />
-                  </Route>
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
+                <Suspense fallback={<LoadingScreen message="Carregando aplicação..." />}>
+                  <Routes>
+                    {/* Public routes */}
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
 
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <Profile />
-                      </ProtectedRoute>
-                    }
-                  />
+                    {/* Protected routes with MainLayout */}
+                    <Route
+                      path="/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <MainLayout />
+                        </ProtectedRoute>
+                      }
+                    >
+                      <Route index element={<Index />} />
+                      <Route path="analytics" element={<Analytics />} />
+                      <Route path="compare" element={<CompareExams />} />
+                    </Route>
 
-                  <Route
-                    path="/exam/:examId"
-                    element={
-                      <ProtectedRoute>
-                        <ExamReport />
-                      </ProtectedRoute>
-                    }
-                  />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <Profile />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* Public shared exam view */}
-                  <Route path="/shared/:token" element={<SharedExamView />} />
+                    <Route
+                      path="/exam/:examId"
+                      element={
+                        <ProtectedRoute>
+                          <ExamReport />
+                        </ProtectedRoute>
+                      }
+                    />
 
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Suspense>
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </QueryClientProvider>
-  </ErrorBoundary>
-);
+                    {/* Public shared exam view */}
+                    <Route path="/shared/:token" element={<SharedExamView />} />
+
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </Suspense>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
+  );
+};
 
 export default App;

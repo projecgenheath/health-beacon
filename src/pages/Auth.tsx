@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Activity, Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Email inválido');
@@ -198,7 +199,10 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-8 relative">
+      <div className="absolute top-6 right-6 z-50">
+        <ThemeToggle />
+      </div>
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
