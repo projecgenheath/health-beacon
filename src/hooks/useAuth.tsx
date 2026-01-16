@@ -68,13 +68,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-      },
-    });
-    return { error };
+    console.log('[AUTH] 🔵 Starting Google OAuth...');
+    console.log('[AUTH] Redirect URL:', `${window.location.origin}/`);
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+
+      if (error) {
+        console.error('[AUTH] ❌ Google OAuth error:', error);
+        return { error };
+      }
+
+      console.log('[AUTH] ✅ Google OAuth initiated successfully');
+      return { error: null };
+    } catch (err) {
+      console.error('[AUTH] ❌ Exception during Google OAuth:', err);
+      return { error: err as Error };
+    }
   };
 
   return (
