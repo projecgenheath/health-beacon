@@ -26,6 +26,7 @@ const CompareExams = lazy(() => import("./pages/CompareExams"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const SharedExamView = lazy(() => import("./pages/SharedExamView"));
 const Reports = lazy(() => import("./pages/Reports"));
+const Register = lazy(() => import("./pages/Register"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ const App = () => {
                     {/* Public routes */}
                     <Route path="/" element={<Landing />} />
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/register" element={<Register />} />
 
                     {/* Protected routes with MainLayout */}
                     <Route

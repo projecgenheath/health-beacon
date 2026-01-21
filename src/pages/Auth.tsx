@@ -288,10 +288,21 @@ const Auth = () => {
           <Tabs defaultValue="login" className="w-full flex-1 flex flex-col">
             <CardHeader className="pb-3 sm:pb-4 shrink-0">
               {(view === 'login' || view === 'register') && (
-                <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
-                  <TabsTrigger value="login" className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Entrar</TabsTrigger>
-                  <TabsTrigger value="register" className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Cadastrar</TabsTrigger>
-                </TabsList>
+                <div className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+                    <TabsTrigger value="login" className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Entrar</TabsTrigger>
+                    <TabsTrigger
+                      value="register"
+                      className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate('/register');
+                      }}
+                    >
+                      Cadastrar
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               )}
             </CardHeader>
 
