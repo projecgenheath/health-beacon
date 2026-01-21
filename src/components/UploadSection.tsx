@@ -337,33 +337,39 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           }),
         });
 
-        let result;
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          result = await response.json();
-        } else {
-          try {
-            const textText = await response.text();
-            // Try parsing JSON anyway just in case content-type is missing
-            try {
-              result = JSON.parse(textText);
-            } catch {
-              if (!response.ok) throw new Error(textText || `Erro HTTP ${response.status}`);
-            }
-          } catch (e) {
-            // ignore
+        let result: any;
+        const responseText = await response.text();
+        console.log('[Upload] Raw response body:', responseText);
+
+        try {
+          if (responseText) {
+            result = JSON.parse(responseText);
           }
+        } catch (e) {
+          console.error('[Upload] Failed to parse response JSON:', e);
         }
 
         if (!response.ok) {
-          const errorMessage = result?.error || 'Falha ao processar o exame';
-          console.error('[Upload] Edge function returned error:', errorMessage, result);
+          // Tenta extrair a mensagem de erro de várias propriedades possíveis
+          let errorMessage = result?.error?.message || result?.error || result?.message || responseText || 'Falha ao processar o exame';
 
-          if (typeof errorMessage === 'string' && (errorMessage.includes('não pertence ao paciente') || errorMessage.includes('Documento não pertence'))) {
+          if (typeof errorMessage === 'object') {
+            errorMessage = JSON.stringify(errorMessage);
+          }
+
+          console.error('[Upload] Edge function returned error (parsed):', errorMessage);
+
+          const errorString = String(errorMessage);
+
+          if (errorString.includes('não pertence ao paciente') || errorString.includes('Documento não pertence')) {
             throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
           }
 
-          throw new Error(errorMessage);
+          if (result?.details?.name_match === false || result?.details?.dob_match === false) {
+            throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
+          }
+
+          throw new Error(errorString);
         }
 
         // Step 5: Complete

@@ -384,7 +384,7 @@ RULES:
               detected_dob: parsedData.patient_dob
             }
           }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
     } else {
