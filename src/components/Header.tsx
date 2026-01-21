@@ -1,4 +1,5 @@
-import { Activity, User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/theme-provider';
@@ -80,9 +81,7 @@ export const Header = () => {
               <SheetContent side="left" className="w-[280px] sm:w-[350px] p-0">
                 <SheetHeader className="p-6 text-left border-b border-border/50">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
-                      <Activity className="h-4 w-4 text-primary-foreground" />
-                    </div>
+                    <img src={logoImg} alt="BHB Logo" className="h-8 w-8 object-contain" />
                     <SheetTitle className="text-xl font-bold">BHB (Biomedical Health Bank)</SheetTitle>
                   </div>
                 </SheetHeader>
@@ -113,13 +112,11 @@ export const Header = () => {
           </div>
 
           {/* Logo - always visible now */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary shadow-sm">
-            <Activity className="h-4 w-4 text-primary-foreground" />
-          </div>
+          <img src={logoImg} alt="BHB Logo" className="h-8 w-8 object-contain" />
 
-          {/* Page Title */}
+          {/* App Name */}
           <h2 className="text-sm sm:text-base font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-            {getPageTitle()}
+            BHB
           </h2>
         </div>
 
