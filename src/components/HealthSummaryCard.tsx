@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { HealthSummary } from '@/types/exam';
-import { Activity, CheckCircle2, AlertTriangle, AlertCircle, ArrowLeftRight, Sparkles } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, AlertCircle, ArrowLeftRight, Sparkles } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -32,8 +33,8 @@ export const HealthSummaryCard = ({ summary, onStatusClick, activeStatuses = [] 
 
       <div className="relative">
         <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl gradient-primary text-primary-foreground shadow-glow-primary transition-spring hover:scale-105">
-            <Activity className="h-5 w-5 sm:h-6 sm:w-6" />
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-background/50 shadow-glow-primary transition-spring hover:scale-105">
+            <img src={logoImg} alt="BHB Logo" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
           </div>
           <div>
             <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">

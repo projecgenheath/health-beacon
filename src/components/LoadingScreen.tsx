@@ -1,4 +1,4 @@
-import { Activity } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 
 interface LoadingScreenProps {
     message?: string;
@@ -23,10 +23,9 @@ export const LoadingScreen = ({
                     {/* Spinning ring */}
                     <div className="absolute inset-0 h-20 w-20 rounded-full border-4 border-transparent border-t-primary animate-spin" />
 
-                    {/* Icon */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center shadow-glow-primary">
-                            <Activity className="h-8 w-8 text-primary-foreground animate-pulse-slow" />
+                        <div className="h-14 w-14 flex items-center justify-center">
+                            <img src={logoImg} alt="BHB Logo" className="h-14 w-14 object-contain animate-pulse-slow" />
                         </div>
                     </div>
                 </div>

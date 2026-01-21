@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import {
     Upload,
     Sparkles,
-    Activity,
     ChartLine,
     Bell,
     Shield,
@@ -29,6 +28,7 @@ import {
     Lock,
     Mail,
 } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { storePendingFile, getPendingFile } from '@/lib/storage';
 
@@ -187,8 +187,8 @@ const Landing = () => {
                 {/* Header */}
                 <header className="px-4 sm:px-6 py-4 flex justify-between items-center">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
-                            <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
+                        <div className="h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center">
+                            <img src={logoImg} alt="BHB Logo" className="h-9 w-9 sm:h-10 sm:w-10 object-contain" />
                         </div>
                         <span className="text-lg sm:text-xl font-bold">BHB</span>
                     </div>

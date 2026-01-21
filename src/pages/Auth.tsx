@@ -11,7 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Activity, Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
+import logoImg from '@/assets/logo.png';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { z } from 'zod';
 
@@ -254,8 +255,8 @@ const Auth = () => {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center animate-pulse-slow shadow-glow-primary">
-            <Activity className="h-8 w-8 text-primary-foreground" />
+          <div className="h-16 w-16 rounded-2xl flex items-center justify-center animate-pulse-slow">
+            <img src={logoImg} alt="BHB Logo" className="h-14 w-14 object-contain" />
           </div>
           <p className="text-muted-foreground animate-fade-in">Carregando...</p>
         </div>
@@ -276,8 +277,8 @@ const Auth = () => {
 
       <div className="relative w-full max-w-md sm:max-w-lg md:max-w-2xl">
         <div className="text-center mb-6 sm:mb-8 animate-slide-up">
-          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl gradient-hero shadow-glow-primary mb-3 sm:mb-4 animate-float hover:scale-105 transition-spring">
-            <Activity className="h-7 w-7 sm:h-10 sm:w-10 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 mb-3 sm:mb-4 animate-float hover:scale-105 transition-spring">
+            <img src={logoImg} alt="BHB Logo" className="w-14 h-14 sm:w-20 sm:h-20 object-contain" />
           </div>
           <h1 className="text-2xl sm:text-4xl font-bold text-foreground">BHB</h1>
           <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Seu histórico de saúde em um só lugar</p>
