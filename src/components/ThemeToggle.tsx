@@ -14,8 +14,9 @@ export const ThemeToggle = () => {
     <button
       onClick={toggleTheme}
       className={cn(
-        "relative p-2.5 rounded-xl text-foreground transition-all duration-300",
+        "relative p-2 sm:p-2.5 rounded-xl text-foreground transition-all duration-300",
         "bg-secondary/50 hover:bg-secondary",
+        "min-w-[40px] min-h-[40px] flex items-center justify-center",
         "group"
       )}
       aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}

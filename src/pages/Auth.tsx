@@ -19,9 +19,15 @@ const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'Senha deve ter pelo menos 6 caracteres');
 
 const Auth = () => {
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Recovery and Reset state
+  const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [view, setView] = useState<'login' | 'register' | 'forgot-password' | 'reset-password'>('login');
 
   // Login form
   const [loginEmail, setLoginEmail] = useState('');
@@ -60,10 +66,16 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    if (user && !loading) {
+    if (user && !loading && view !== 'reset-password') {
       navigate('/dashboard');
     }
-  }, [user, loading, navigate]);
+
+    // Check for recovery type in URL
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('type') === 'recovery' || window.location.hash.includes('type=recovery')) {
+      setView('reset-password');
+    }
+  }, [user, loading, navigate, view]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -185,6 +197,59 @@ const Auth = () => {
     setIsSubmitting(false);
   };
 
+  const handleRecoveryRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      emailSchema.parse(recoveryEmail);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    const { error } = await resetPassword(recoveryEmail);
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Erro ao enviar email de recuperação: ' + error.message);
+    } else {
+      toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+      setView('login');
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      passwordSchema.parse(newPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    setIsSubmitting(false);
+
+    if (error) {
+      toast.error('Erro ao atualizar senha: ' + error.message);
+    } else {
+      toast.success('Senha atualizada com sucesso!');
+      navigate('/dashboard');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -199,435 +264,489 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 py-8 relative">
-      <div className="absolute top-6 right-6 z-50">
+    <div className="min-h-screen flex flex-col items-center justify-start sm:justify-center p-4 py-6 sm:py-8 relative overflow-x-hidden">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
         <ThemeToggle />
       </div>
       {/* Background decorations */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-status-healthy/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/3 left-1/4 w-64 h-64 rounded-full bg-accent/10 blur-2xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute -top-40 -right-40 w-64 sm:w-96 h-64 sm:h-96 rounded-full bg-primary/10 blur-3xl animate-float" />
+        <div className="absolute -bottom-40 -left-40 w-64 sm:w-96 h-64 sm:h-96 rounded-full bg-status-healthy/10 blur-3xl animate-float" style={{ animationDelay: '2s' }} />
       </div>
 
-      <div className="relative w-full max-w-2xl">
-        <div className="text-center mb-8 animate-slide-up">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl gradient-hero shadow-glow-primary mb-4 animate-float hover:scale-105 transition-spring">
-            <Activity className="h-10 w-10 text-primary-foreground" />
+      <div className="relative w-full max-w-md sm:max-w-lg md:max-w-2xl">
+        <div className="text-center mb-6 sm:mb-8 animate-slide-up">
+          <div className="inline-flex items-center justify-center w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl gradient-hero shadow-glow-primary mb-3 sm:mb-4 animate-float hover:scale-105 transition-spring">
+            <Activity className="h-7 w-7 sm:h-10 sm:w-10 text-primary-foreground" />
           </div>
-          <h1 className="text-4xl font-bold text-foreground">BHB</h1>
-          <p className="text-muted-foreground mt-2">Seu histórico de saúde em um só lugar</p>
+          <h1 className="text-2xl sm:text-4xl font-bold text-foreground">BHB</h1>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">Seu histórico de saúde em um só lugar</p>
         </div>
 
-        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col">
+        <Card className="border-border/50 shadow-lg glass-effect animate-scale-in hover-lift overflow-hidden flex flex-col max-h-[calc(100vh-200px)] sm:max-h-none">
           <Tabs defaultValue="login" className="w-full flex-1 flex flex-col">
-            <CardHeader className="pb-4 shrink-0">
-              <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
-                <TabsTrigger value="login" className="data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Entrar</TabsTrigger>
-                <TabsTrigger value="register" className="data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Cadastrar</TabsTrigger>
-              </TabsList>
+            <CardHeader className="pb-3 sm:pb-4 shrink-0">
+              {(view === 'login' || view === 'register') && (
+                <TabsList className="grid w-full grid-cols-2 bg-secondary/50">
+                  <TabsTrigger value="login" className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Entrar</TabsTrigger>
+                  <TabsTrigger value="register" className="text-sm data-[state=active]:bg-card data-[state=active]:shadow-sm transition-smooth">Cadastrar</TabsTrigger>
+                </TabsList>
+              )}
             </CardHeader>
 
             <CardContent className="p-0">
-              {/* LOGIN TAB */}
-              <TabsContent value="login" className="mt-0 p-6">
-                <div className="space-y-4">
-                  {/* Google Button */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full h-12 gap-3 text-base font-medium hover:bg-accent"
-                    onClick={async () => {
-                      const { signInWithGoogle } = await import('@/hooks/useAuth').then(m => ({ signInWithGoogle: null }));
-                      const { error } = await supabase.auth.signInWithOAuth({
-                        provider: 'google',
-                        options: {
-                          redirectTo: `${window.location.origin}/dashboard`,
-                        },
-                      });
-                      if (error) {
-                        toast.error('Erro ao entrar com Google');
-                      }
-                    }}
-                  >
-                    <svg className="h-5 w-5" viewBox="0 0 24 24">
-                      <path
-                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                        fill="#4285F4"
-                      />
-                      <path
-                        d="m12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                        fill="#34A853"
-                      />
-                      <path
-                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                        fill="#FBBC05"
-                      />
-                      <path
-                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                        fill="#EA4335"
-                      />
-                    </svg>
-                    Continuar com Google
-                  </Button>
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-card px-2 text-muted-foreground">
-                        ou com email
-                      </span>
-                    </div>
+              {view === 'forgot-password' ? (
+                <div className="p-6 space-y-4 animate-fade-in">
+                  <div className="space-y-2 text-center mb-4">
+                    <h3 className="text-xl font-bold">Recuperar Senha</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Digite seu email para receber um link de recuperação.
+                    </p>
                   </div>
-
-                  <form onSubmit={handleLogin} className="space-y-4">
+                  <form onSubmit={handleRecoveryRequest} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-email">Email</Label>
+                      <Label htmlFor="recovery-email">Email</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="login-email"
+                          id="recovery-email"
                           type="email"
                           placeholder="seu@email.com"
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
+                          value={recoveryEmail}
+                          onChange={(e) => setRecoveryEmail(e.target.value)}
                           className="pl-10"
                           required
                         />
                       </div>
                     </div>
-
+                    <Button
+                      type="submit"
+                      className="w-full gradient-primary text-primary-foreground hover:opacity-90 shadow-glow-primary"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="w-full text-muted-foreground"
+                      onClick={() => setView('login')}
+                    >
+                      Voltar para o Login
+                    </Button>
+                  </form>
+                </div>
+              ) : view === 'reset-password' ? (
+                <div className="p-6 space-y-4 animate-fade-in">
+                  <div className="space-y-2 text-center mb-4">
+                    <h3 className="text-xl font-bold">Nova Senha</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Crie uma nova senha segura para sua conta.
+                    </p>
+                  </div>
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="login-password">Senha</Label>
+                      <Label htmlFor="new-password">Nova Senha</Label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
-                          id="login-password"
+                          id="new-password"
                           type="password"
                           placeholder="••••••••"
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
                           className="pl-10"
                           required
                         />
                       </div>
                     </div>
-
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-new-password">Confirmar Nova Senha</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="confirm-new-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
                     <Button
                       type="submit"
-                      className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press"
+                      className="w-full gradient-primary text-primary-foreground hover:opacity-90 shadow-glow-primary"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Entrando...' : 'Entrar'}
+                      {isSubmitting ? 'Atualizando...' : 'Atualizar Senha'}
                     </Button>
                   </form>
                 </div>
-              </TabsContent>
-
-              {/* REGISTER TAB */}
-              <TabsContent value="register" className="mt-0">
-                <div className="px-6 pb-6">
-                  <form onSubmit={handleRegister} className="space-y-6 pt-4">
-
-                    {/* Account Info */}
+              ) : (
+                <>
+                  {/* LOGIN TAB */}
+                  <TabsContent value="login" className="mt-0 p-6">
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <User className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Dados da Conta</h3>
-                      </div>
+                      <form onSubmit={handleLogin} className="space-y-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="login-email">Email</Label>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="login-email"
+                              type="email"
+                              placeholder="seu@email.com"
+                              value={loginEmail}
+                              onChange={(e) => setLoginEmail(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
+                        </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="full_name">Nome Completo *</Label>
-                          <Input
-                            id="full_name"
-                            value={formData.full_name}
-                            onChange={(e) => handleInputChange('full_name', e.target.value)}
-                            placeholder="Seu nome completo"
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="email">Email *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => handleInputChange('email', e.target.value)}
-                            placeholder="seu@email.com"
-                            required
-                          />
-                        </div>
                         <div className="space-y-2">
-                          <Label htmlFor="password">Senha *</Label>
-                          <Input
-                            id="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={(e) => handleInputChange('password', e.target.value)}
-                            placeholder="••••••••"
-                            required
-                          />
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor="login-password">Senha</Label>
+                            <Button
+                              variant="link"
+                              className="px-0 h-auto text-xs font-normal text-muted-foreground hover:text-primary transition-colors"
+                              type="button"
+                              onClick={() => setView('forgot-password')}
+                            >
+                              Esqueceu sua senha?
+                            </Button>
+                          </div>
+                          <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              id="login-password"
+                              type="password"
+                              placeholder="••••••••"
+                              value={loginPassword}
+                              onChange={(e) => setLoginPassword(e.target.value)}
+                              className="pl-10"
+                              required
+                            />
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
-                          <Input
-                            id="confirmPassword"
-                            type="password"
-                            value={formData.confirmPassword}
-                            onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
-                            placeholder="••••••••"
-                            required
-                          />
-                        </div>
-                      </div>
+
+                        <Button
+                          type="submit"
+                          className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Entrando...' : 'Entrar'}
+                        </Button>
+                      </form>
                     </div>
+                  </TabsContent>
 
-                    {/* Personal Info */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <FileText className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Informações Pessoais</h3>
-                      </div>
+                  {/* REGISTER TAB */}
+                  <TabsContent value="register" className="mt-0 flex-1 overflow-hidden">
+                    <div className="h-full overflow-y-auto px-4 sm:px-6 pb-6 max-h-[50vh] sm:max-h-none">
+                      <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6 pt-4">
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="birth_date">Data de Nascimento</Label>
-                          <Input
-                            id="birth_date"
-                            type="date"
-                            value={formData.birth_date}
-                            onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                          />
+                        {/* Account Info */}
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                            <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <h3 className="font-semibold text-base sm:text-lg">Dados da Conta</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="full_name">Nome Completo *</Label>
+                              <Input
+                                id="full_name"
+                                value={formData.full_name}
+                                onChange={(e) => handleInputChange('full_name', e.target.value)}
+                                placeholder="Seu nome completo"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="email">Email *</Label>
+                              <Input
+                                id="email"
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => handleInputChange('email', e.target.value)}
+                                placeholder="seu@email.com"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="password">Senha *</Label>
+                              <Input
+                                id="password"
+                                type="password"
+                                value={formData.password}
+                                onChange={(e) => handleInputChange('password', e.target.value)}
+                                placeholder="••••••••"
+                                required
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+                              <Input
+                                id="confirmPassword"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                                placeholder="••••••••"
+                                required
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cpf">CPF</Label>
-                          <Input
-                            id="cpf"
-                            value={formData.cpf}
-                            onChange={(e) => handleInputChange('cpf', e.target.value)}
-                            placeholder="000.000.000-00"
-                          />
+
+                        {/* Personal Info */}
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <h3 className="font-semibold text-base sm:text-lg">Informações Pessoais</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="birth_date">Data de Nascimento</Label>
+                              <Input
+                                id="birth_date"
+                                type="date"
+                                value={formData.birth_date}
+                                onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="cpf">CPF</Label>
+                              <Input
+                                id="cpf"
+                                value={formData.cpf}
+                                onChange={(e) => handleInputChange('cpf', e.target.value)}
+                                placeholder="000.000.000-00"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="sex">Sexo Biológico</Label>
+                              <Select onValueChange={(val) => handleInputChange('sex', val)} value={formData.sex}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="masculino">Masculino</SelectItem>
+                                  <SelectItem value="feminino">Feminino</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="gender">Identidade de Gênero</Label>
+                              <Select onValueChange={(val) => handleInputChange('gender', val)} value={formData.gender}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="cisgenero">Cisgênero</SelectItem>
+                                  <SelectItem value="transgenero">Transgênero</SelectItem>
+                                  <SelectItem value="nao_binario">Não-binário</SelectItem>
+                                  <SelectItem value="outro">Outro</SelectItem>
+                                  <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="ethnicity">Etnia/Cor</Label>
+                              <Select onValueChange={(val) => handleInputChange('ethnicity', val)} value={formData.ethnicity}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="branca">Branca</SelectItem>
+                                  <SelectItem value="preta">Preta</SelectItem>
+                                  <SelectItem value="parda">Parda</SelectItem>
+                                  <SelectItem value="amarela">Amarela</SelectItem>
+                                  <SelectItem value="indigena">Indígena</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="marital_status">Estado Civil</Label>
+                              <Select onValueChange={(val) => handleInputChange('marital_status', val)} value={formData.marital_status}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                                  <SelectItem value="casado">Casado(a)</SelectItem>
+                                  <SelectItem value="separado">Separado(a)</SelectItem>
+                                  <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                                  <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="sex">Sexo Biológico</Label>
-                          <Select onValueChange={(val) => handleInputChange('sex', val)} value={formData.sex}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="masculino">Masculino</SelectItem>
-                              <SelectItem value="feminino">Feminino</SelectItem>
-                            </SelectContent>
-                          </Select>
+
+                        {/* Address Info */}
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                            <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <h3 className="font-semibold text-base sm:text-lg">Endereço</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="address_country">País</Label>
+                              <Input
+                                id="address_country"
+                                value={formData.address_country}
+                                onChange={(e) => handleInputChange('address_country', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address_state">Estado</Label>
+                              <Input
+                                id="address_state"
+                                value={formData.address_state}
+                                onChange={(e) => handleInputChange('address_state', e.target.value)}
+                                placeholder="UF"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address_city">Cidade</Label>
+                              <Input
+                                id="address_city"
+                                value={formData.address_city}
+                                onChange={(e) => handleInputChange('address_city', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address_neighborhood">Bairro</Label>
+                              <Input
+                                id="address_neighborhood"
+                                value={formData.address_neighborhood}
+                                onChange={(e) => handleInputChange('address_neighborhood', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="address_street">Rua</Label>
+                              <Input
+                                id="address_street"
+                                value={formData.address_street}
+                                onChange={(e) => handleInputChange('address_street', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address_number">Número</Label>
+                              <Input
+                                id="address_number"
+                                value={formData.address_number}
+                                onChange={(e) => handleInputChange('address_number', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="address_complement">Complemento</Label>
+                              <Input
+                                id="address_complement"
+                                value={formData.address_complement}
+                                onChange={(e) => handleInputChange('address_complement', e.target.value)}
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="gender">Identidade de Gênero</Label>
-                          <Select onValueChange={(val) => handleInputChange('gender', val)} value={formData.gender}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="cisgenero">Cisgênero</SelectItem>
-                              <SelectItem value="transgenero">Transgênero</SelectItem>
-                              <SelectItem value="nao_binario">Não-binário</SelectItem>
-                              <SelectItem value="outro">Outro</SelectItem>
-                              <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
-                            </SelectContent>
-                          </Select>
+
+                        {/* Contact Info */}
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                            <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <h3 className="font-semibold text-base sm:text-lg">Contato</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="phone">Telefone</Label>
+                              <Input
+                                id="phone"
+                                value={formData.phone}
+                                onChange={(e) => handleInputChange('phone', e.target.value)}
+                                placeholder="(00) 00000-0000"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="emergency_phone">Contato de Emergência</Label>
+                              <Input
+                                id="emergency_phone"
+                                value={formData.emergency_phone}
+                                onChange={(e) => handleInputChange('emergency_phone', e.target.value)}
+                                placeholder="(00) 00000-0000"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="ethnicity">Etnia/Cor</Label>
-                          <Select onValueChange={(val) => handleInputChange('ethnicity', val)} value={formData.ethnicity}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="branca">Branca</SelectItem>
-                              <SelectItem value="preta">Preta</SelectItem>
-                              <SelectItem value="parda">Parda</SelectItem>
-                              <SelectItem value="amarela">Amarela</SelectItem>
-                              <SelectItem value="indigena">Indígena</SelectItem>
-                            </SelectContent>
-                          </Select>
+
+                        {/* Medical Info */}
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                            <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            <h3 className="font-semibold text-base sm:text-lg">Saúde</h3>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="weight">Peso (kg)</Label>
+                              <Input
+                                id="weight"
+                                type="number"
+                                step="0.1"
+                                value={formData.weight}
+                                onChange={(e) => handleInputChange('weight', e.target.value)}
+                                placeholder="Ex: 70.5"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="height">Altura (cm)</Label>
+                              <Input
+                                id="height"
+                                type="number"
+                                value={formData.height}
+                                onChange={(e) => handleInputChange('height', e.target.value)}
+                                placeholder="Ex: 175"
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="allergies">Alergias</Label>
+                              <Textarea
+                                id="allergies"
+                                value={formData.allergies}
+                                onChange={(e) => handleInputChange('allergies', e.target.value)}
+                                placeholder="Liste suas alergias (opcional)"
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
+                              <Textarea
+                                id="chronic_diseases"
+                                value={formData.chronic_diseases}
+                                onChange={(e) => handleInputChange('chronic_diseases', e.target.value)}
+                                placeholder="Liste doenças crônicas ou tratamentos em andamento (opcional)"
+                              />
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="marital_status">Estado Civil</Label>
-                          <Select onValueChange={(val) => handleInputChange('marital_status', val)} value={formData.marital_status}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="solteiro">Solteiro(a)</SelectItem>
-                              <SelectItem value="casado">Casado(a)</SelectItem>
-                              <SelectItem value="separado">Separado(a)</SelectItem>
-                              <SelectItem value="divorciado">Divorciado(a)</SelectItem>
-                              <SelectItem value="viuvo">Viúvo(a)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+
+                        <Button
+                          type="submit"
+                          className="w-full h-11 sm:h-12 mt-4 sm:mt-6 gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press text-base sm:text-lg font-semibold"
+                          disabled={isSubmitting}
+                        >
+                          {isSubmitting ? 'Criando conta...' : 'Concluir Cadastro'}
+                        </Button>
+                      </form>
                     </div>
-
-                    {/* Address Info */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Endereço</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="address_country">País</Label>
-                          <Input
-                            id="address_country"
-                            value={formData.address_country}
-                            onChange={(e) => handleInputChange('address_country', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address_state">Estado</Label>
-                          <Input
-                            id="address_state"
-                            value={formData.address_state}
-                            onChange={(e) => handleInputChange('address_state', e.target.value)}
-                            placeholder="UF"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address_city">Cidade</Label>
-                          <Input
-                            id="address_city"
-                            value={formData.address_city}
-                            onChange={(e) => handleInputChange('address_city', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address_neighborhood">Bairro</Label>
-                          <Input
-                            id="address_neighborhood"
-                            value={formData.address_neighborhood}
-                            onChange={(e) => handleInputChange('address_neighborhood', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="address_street">Rua</Label>
-                          <Input
-                            id="address_street"
-                            value={formData.address_street}
-                            onChange={(e) => handleInputChange('address_street', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address_number">Número</Label>
-                          <Input
-                            id="address_number"
-                            value={formData.address_number}
-                            onChange={(e) => handleInputChange('address_number', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address_complement">Complemento</Label>
-                          <Input
-                            id="address_complement"
-                            value={formData.address_complement}
-                            onChange={(e) => handleInputChange('address_complement', e.target.value)}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Contact Info */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <Phone className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Contato</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="phone">Telefone</Label>
-                          <Input
-                            id="phone"
-                            value={formData.phone}
-                            onChange={(e) => handleInputChange('phone', e.target.value)}
-                            placeholder="(00) 00000-0000"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="emergency_phone">Contato de Emergência</Label>
-                          <Input
-                            id="emergency_phone"
-                            value={formData.emergency_phone}
-                            onChange={(e) => handleInputChange('emergency_phone', e.target.value)}
-                            placeholder="(00) 00000-0000"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Medical Info */}
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                        <Heart className="h-5 w-5 text-primary" />
-                        <h3 className="font-semibold text-lg">Saúde</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="weight">Peso (kg)</Label>
-                          <Input
-                            id="weight"
-                            type="number"
-                            step="0.1"
-                            value={formData.weight}
-                            onChange={(e) => handleInputChange('weight', e.target.value)}
-                            placeholder="Ex: 70.5"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="height">Altura (cm)</Label>
-                          <Input
-                            id="height"
-                            type="number"
-                            value={formData.height}
-                            onChange={(e) => handleInputChange('height', e.target.value)}
-                            placeholder="Ex: 175"
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="allergies">Alergias</Label>
-                          <Textarea
-                            id="allergies"
-                            value={formData.allergies}
-                            onChange={(e) => handleInputChange('allergies', e.target.value)}
-                            placeholder="Liste suas alergias (opcional)"
-                          />
-                        </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
-                          <Textarea
-                            id="chronic_diseases"
-                            value={formData.chronic_diseases}
-                            onChange={(e) => handleInputChange('chronic_diseases', e.target.value)}
-                            placeholder="Liste doenças crônicas ou tratamentos em andamento (opcional)"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full h-12 mt-6 gradient-primary text-primary-foreground hover:opacity-90 transition-smooth shadow-glow-primary hover:shadow-lg btn-press text-lg font-semibold"
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? 'Criando conta...' : 'Concluir Cadastro'}
-                    </Button>
-                  </form>
-                </div>
-              </TabsContent>
+                  </TabsContent>
+                </>
+              )}
             </CardContent>
           </Tabs>
         </Card>

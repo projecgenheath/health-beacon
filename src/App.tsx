@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/MainLayout";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { NetworkStatusBanner } from "@/components/NetworkStatusBanner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -24,6 +25,7 @@ const ExamReport = lazy(() => import("./pages/ExamReport"));
 const CompareExams = lazy(() => import("./pages/CompareExams"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const SharedExamView = lazy(() => import("./pages/SharedExamView"));
+const Reports = lazy(() => import("./pages/Reports"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -55,6 +57,7 @@ const App = () => {
             <TooltipProvider>
               <Toaster />
               <Sonner />
+              <NetworkStatusBanner />
               <BrowserRouter
                 future={{
                   v7_startTransition: true,
@@ -79,6 +82,7 @@ const App = () => {
                       <Route index element={<Index />} />
                       <Route path="analytics" element={<Analytics />} />
                       <Route path="compare" element={<CompareExams />} />
+                      <Route path="reports" element={<Reports />} />
                     </Route>
 
                     <Route

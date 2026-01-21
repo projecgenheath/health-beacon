@@ -38,27 +38,27 @@ export const AIInsightsWidget = ({ exams }: AIInsightsWidgetProps) => {
 
     return (
         <Card className="glass-card border-none overflow-hidden">
-            <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-primary animate-pulse-slow" />
+            <CardHeader className="pb-2 px-4 sm:px-6">
+                <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-primary animate-pulse-slow" />
                     Insights da IA
                 </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
                 {insights.map((insight, idx) => (
                     <div
                         key={idx}
                         className={cn(
-                            "p-4 rounded-xl flex items-start gap-3 transition-all hover:scale-[1.02]",
+                            "p-3 sm:p-4 rounded-xl flex items-start gap-3 transition-all hover:scale-[1.02]",
                             insight.bg
                         )}
                     >
-                        <div className={cn("mt-1 p-2 rounded-lg bg-background/50", insight.color)}>
-                            <insight.icon className="h-5 w-5" />
+                        <div className={cn("mt-0.5 p-1.5 sm:p-2 rounded-lg bg-background/50", insight.color)}>
+                            <insight.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                             <h4 className="text-sm font-bold text-foreground">{insight.title}</h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed mt-0.5 sm:mt-1">
                                 {insight.description}
                             </p>
                         </div>
@@ -66,7 +66,7 @@ export const AIInsightsWidget = ({ exams }: AIInsightsWidgetProps) => {
                 ))}
 
                 <div className="pt-2 border-t border-border/50">
-                    <p className="text-[10px] text-muted-foreground text-center italic">
+                    <p className="text-[10px] sm:text-xs text-muted-foreground text-center italic">
                         Informações geradas automaticamente com base nos seus últimos exames.
                     </p>
                 </div>

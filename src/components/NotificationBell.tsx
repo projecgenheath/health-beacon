@@ -50,10 +50,10 @@ export const NotificationBell = () => {
 
       goals?.forEach((goal) => {
         if (!goal.deadline) return;
-        
+
         const deadline = parseISO(goal.deadline);
         const daysRemaining = differenceInDays(deadline, today);
-        
+
         if (daysRemaining >= 0 && daysRemaining <= 7) {
           let message = '';
           if (daysRemaining === 0) {
@@ -97,7 +97,7 @@ export const NotificationBell = () => {
 
       // Sort by date, newest first
       notifs.sort((a, b) => b.date.getTime() - a.date.getTime());
-      
+
       setNotifications(notifs);
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -116,10 +116,11 @@ export const NotificationBell = () => {
       if (open) markAsRead();
     }}>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative transition-all duration-300 hover:scale-110"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative transition-all duration-300 hover:scale-110 min-w-[40px] min-h-[40px] p-2 sm:p-2.5 rounded-xl bg-secondary/50 hover:bg-secondary"
+          aria-label="Notificações"
         >
           {unreadCount > 0 ? (
             <BellRing className="h-5 w-5 animate-pulse" />
@@ -127,8 +128,8 @@ export const NotificationBell = () => {
             <Bell className="h-5 w-5" />
           )}
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce"
             >
               {unreadCount}
@@ -152,15 +153,14 @@ export const NotificationBell = () => {
           ) : (
             <div className="divide-y">
               {notifications.map((notif) => (
-                <div 
+                <div
                   key={notif.id}
                   className={`p-4 transition-colors hover:bg-muted/50 ${!notif.read ? 'bg-primary/5' : ''}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${
-                      notif.type === 'goal_deadline' ? 'bg-yellow-500' :
-                      notif.type === 'goal_achieved' ? 'bg-green-500' : 'bg-red-500'
-                    }`} />
+                    <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.type === 'goal_deadline' ? 'bg-yellow-500' :
+                        notif.type === 'goal_achieved' ? 'bg-green-500' : 'bg-red-500'
+                      }`} />
                     <div className="space-y-1 flex-1">
                       <p className="text-sm font-medium leading-none">{notif.title}</p>
                       <p className="text-sm text-muted-foreground">{notif.message}</p>

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useExamData } from '@/hooks/useExamData';
 import { useBMIHistory } from '@/hooks/useBMIHistory';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,9 +30,10 @@ import {
 } from 'recharts';
 import { format, parseISO, subMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, Minus, Activity, Target, Calendar, AlertTriangle, Scale, Plus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Activity, Target, Calendar, AlertTriangle, Scale, Plus, ArrowLeft } from 'lucide-react';
 
 const Analytics = () => {
+  const navigate = useNavigate();
   const { exams, histories, summary, loading } = useExamData();
   const { history: bmiHistory, stats: bmiStats, loading: bmiLoading, refetch: refetchBMI, getBMICategory } = useBMIHistory();
   const [selectedExam, setSelectedExam] = useState<string>('all');
@@ -111,7 +113,7 @@ const Analytics = () => {
     // Sort by date and fill in missing health scores with last known value
     const sortedData = Array.from(dateMap.values())
       .sort((a, b) => a.date.localeCompare(b.date));
-    
+
     // Forward-fill health scores: carry the last known health score to dates without exams
     let lastKnownHealthScore: number | null = null;
     sortedData.forEach(entry => {
@@ -123,10 +125,10 @@ const Analytics = () => {
     });
 
     // If we still have null values at the beginning, use the current summary health score
-    const currentHealthScore = summary.totalExams > 0 
-      ? Math.round((summary.healthy / summary.totalExams) * 100) 
+    const currentHealthScore = summary.totalExams > 0
+      ? Math.round((summary.healthy / summary.totalExams) * 100)
       : null;
-    
+
     sortedData.forEach(entry => {
       if (entry.healthScore === null && currentHealthScore !== null) {
         entry.healthScore = currentHealthScore;
@@ -210,6 +212,14 @@ const Analytics = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/dashboard')}
+            className="mb-2 pl-0 hover:pl-2 transition-all -ml-2"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
           <h1 className="text-2xl font-bold tracking-tight">Analytics de Saúde</h1>
           <p className="text-muted-foreground">Acompanhe suas tendências de saúde ao longo do tempo</p>
         </div>
@@ -356,7 +366,7 @@ const Analytics = () => {
                         return [value, name];
                       }}
                     />
-                    <Legend 
+                    <Legend
                       wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
                       iconSize={10}
                     />
@@ -613,8 +623,8 @@ const Analytics = () => {
                         </p>
                       </div>
                       <div className={`flex items-center gap-1 ${trend.trend === 'up' ? 'text-red-500' :
-                          trend.trend === 'down' ? 'text-green-500' :
-                            'text-muted-foreground'
+                        trend.trend === 'down' ? 'text-green-500' :
+                          'text-muted-foreground'
                         }`}>
                         {trend.trend === 'up' ? <TrendingUp className="h-5 w-5" /> :
                           trend.trend === 'down' ? <TrendingDown className="h-5 w-5" /> :

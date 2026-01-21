@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useExamData } from '@/hooks/useExamData';
 import { useGoalNotifications } from '@/hooks/useGoalNotifications';
 import { HealthSummaryCard } from '@/components/HealthSummaryCard';
@@ -9,11 +10,14 @@ import { DashboardSkeleton } from '@/components/skeletons';
 import { ExportPDFButton } from '@/components/ExportPDFButton';
 import { HealthGoals } from '@/components/HealthGoals';
 import { AIInsightsWidget } from '@/components/AIInsightsWidget';
+import { HealthTrendsWidget } from '@/components/HealthTrendsWidget';
+import { QuickActions } from '@/components/QuickActions';
 import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
 
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
+  const uploadSectionRef = useRef<HTMLDivElement>(null);
 
   // Unified Search and Filter State
   const {
@@ -37,43 +41,57 @@ const Index = () => {
   // Initialize goal notifications
   useGoalNotifications();
 
+  // Scroll to upload section
+  const handleUploadClick = () => {
+    uploadSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
   if (dataLoading) {
     return <DashboardSkeleton />;
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      {/* Left column - AI Insights and Upload */}
-      <div className="space-y-6 lg:col-span-1">
-        <AIInsightsWidget exams={exams} />
-        <HealthGoals />
-        <UploadSection onUploadComplete={refetch} />
-        <UploadHistory onReprocess={refetch} />
-        <AlertsSection exams={exams} />
-      </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Quick Actions Bar */}
+      <QuickActions onUploadClick={handleUploadClick} />
 
-      {/* Center/Right column - Summary and Exams */}
-      <div className="lg:col-span-2 space-y-6">
-        <HealthSummaryCard
-          summary={summary}
-          onStatusClick={toggleStatus}
-          activeStatuses={filters.statuses}
-        />
+      {/* Mobile-first: Summary first on mobile, then grid reverses on desktop */}
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+        {/* Mobile: Show summary first (order-first on mobile, order-2 on desktop) */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-first lg:order-2">
+          <HealthSummaryCard
+            summary={summary}
+            onStatusClick={toggleStatus}
+            activeStatuses={filters.statuses}
+          />
 
-        <div className="flex justify-end">
-          <ExportPDFButton exams={exams} summary={summary} />
+          <div className="flex justify-end">
+            <ExportPDFButton exams={exams} summary={summary} />
+          </div>
+
+          <ExamResultsList
+            exams={exams}
+            histories={histories}
+            onExamDeleted={refetch}
+            filterProps={{
+              filteredData,
+              setSearchTerm,
+              filters: { searchTerm: filters.searchTerm }
+            }}
+          />
         </div>
 
-        <ExamResultsList
-          exams={exams}
-          histories={histories}
-          onExamDeleted={refetch}
-          filterProps={{
-            filteredData,
-            setSearchTerm,
-            filters: { searchTerm: filters.searchTerm }
-          }}
-        />
+        {/* Mobile: AI Insights and other widgets second (order-2 on mobile, order-first on desktop) */}
+        <div className="space-y-4 sm:space-y-6 lg:col-span-1 order-2 lg:order-first">
+          <AIInsightsWidget exams={exams} />
+          <HealthTrendsWidget histories={histories} exams={exams} />
+          <HealthGoals />
+          <div ref={uploadSectionRef}>
+            <UploadSection onUploadComplete={refetch} />
+          </div>
+          <UploadHistory onReprocess={refetch} />
+          <AlertsSection exams={exams} />
+        </div>
       </div>
     </div>
   );

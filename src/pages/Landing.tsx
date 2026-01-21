@@ -185,40 +185,41 @@ const Landing = () => {
             {/* Main Content */}
             <div className="relative z-10 min-h-screen flex flex-col">
                 {/* Header */}
-                <header className="p-6 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
-                            <Activity className="h-5 w-5 text-primary-foreground" />
+                <header className="px-4 sm:px-6 py-4 flex justify-between items-center">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg shadow-primary/30">
+                            <Activity className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
                         </div>
-                        <span className="text-xl font-bold">BHB</span>
+                        <span className="text-lg sm:text-xl font-bold">BHB</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 sm:gap-2">
                         <ThemeToggle />
                         <Button
                             variant="outline"
-                            className="gap-2"
+                            size="sm"
+                            className="gap-1 sm:gap-2 text-xs sm:text-sm h-9 sm:h-10 px-3 sm:px-4"
                             onClick={() => navigate('/auth')}
                         >
-                            <Lock className="h-4 w-4" />
-                            Entrar
+                            <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <span className="hidden xs:inline">Entrar</span>
                         </Button>
                     </div>
                 </header>
 
                 {/* Hero Section */}
-                <main className="flex-1 flex flex-col items-center justify-center px-4 pb-20">
-                    <div className="text-center max-w-3xl mx-auto mb-12 animate-fade-in">
-                        <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-sm">
-                            <Zap className="h-3.5 w-3.5 mr-1.5" />
+                <main className="flex-1 flex flex-col items-center justify-center px-4 pb-12 sm:pb-20">
+                    <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12 animate-fade-in">
+                        <Badge variant="secondary" className="mb-4 sm:mb-6 px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm">
+                            <Zap className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5" />
                             Powered by AI
                         </Badge>
-                        <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text">
+                        <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-foreground via-foreground to-foreground/70 bg-clip-text leading-tight">
                             Analise seus exames com{' '}
                             <span className="bg-gradient-to-r from-primary to-status-healthy bg-clip-text text-transparent">
                                 inteligência artificial
                             </span>
                         </h1>
-                        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                        <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto px-2">
                             Faça upload do seu exame e receba uma análise detalhada em segundos.
                             Acompanhe sua saúde de forma inteligente.
                         </p>
@@ -227,7 +228,7 @@ const Landing = () => {
                     {/* Upload Area */}
                     <Card
                         className={cn(
-                            'w-full max-w-2xl p-8 cursor-pointer transition-all duration-300',
+                            'w-full max-w-2xl p-6 sm:p-8 cursor-pointer transition-all duration-300',
                             'bg-card/50 backdrop-blur-xl border-2',
                             'hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10',
                             isDragging
@@ -248,37 +249,37 @@ const Landing = () => {
                             onChange={handleInputChange}
                         />
 
-                        <div className="flex flex-col items-center gap-6">
+                        <div className="flex flex-col items-center gap-4 sm:gap-6">
                             <div className={cn(
-                                'h-20 w-20 rounded-2xl flex items-center justify-center transition-all duration-300',
+                                'h-16 w-16 sm:h-20 sm:w-20 rounded-2xl flex items-center justify-center transition-all duration-300',
                                 'bg-gradient-to-br from-primary/20 to-primary/5',
                                 isDragging && 'scale-110 from-primary/30 to-primary/10'
                             )}>
                                 <Upload className={cn(
-                                    'h-10 w-10 transition-all duration-300',
+                                    'h-8 w-8 sm:h-10 sm:w-10 transition-all duration-300',
                                     isDragging ? 'text-primary scale-110' : 'text-muted-foreground'
                                 )} />
                             </div>
 
                             <div className="text-center">
-                                <p className="text-lg font-medium mb-2">
+                                <p className="text-base sm:text-lg font-medium mb-2">
                                     {isDragging
                                         ? 'Solte o arquivo aqui'
                                         : 'Arraste seu exame aqui ou clique para selecionar'
                                     }
                                 </p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-xs sm:text-sm text-muted-foreground">
                                     Suportamos PDF e imagens (JPG, PNG)
                                 </p>
                             </div>
 
-                            <div className="flex gap-3">
-                                <Badge variant="outline" className="gap-1.5">
-                                    <FileText className="h-3.5 w-3.5" />
+                            <div className="flex gap-2 sm:gap-3">
+                                <Badge variant="outline" className="gap-1 sm:gap-1.5 text-xs">
+                                    <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     PDF
                                 </Badge>
-                                <Badge variant="outline" className="gap-1.5">
-                                    <ImageIcon className="h-3.5 w-3.5" />
+                                <Badge variant="outline" className="gap-1 sm:gap-1.5 text-xs">
+                                    <ImageIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                                     JPG/PNG
                                 </Badge>
                             </div>
@@ -286,28 +287,28 @@ const Landing = () => {
                     </Card>
 
                     {/* Features */}
-                    <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-5xl w-full px-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mt-10 sm:mt-16 max-w-5xl w-full px-2">
                         {features.map((feature, index) => (
                             <Card
                                 key={feature.title}
-                                className="p-6 bg-card/30 backdrop-blur border-border/50 hover:bg-card/50 transition-all duration-300"
+                                className="p-4 sm:p-6 bg-card/30 backdrop-blur border-border/50 hover:bg-card/50 transition-all duration-300"
                                 style={{ animationDelay: `${index * 100}ms` }}
                             >
                                 <div className={cn(
-                                    'h-12 w-12 rounded-xl flex items-center justify-center mb-4',
+                                    'h-10 w-10 sm:h-12 sm:w-12 rounded-xl flex items-center justify-center mb-3 sm:mb-4',
                                     `bg-gradient-to-br ${feature.gradient}`
                                 )}>
-                                    <feature.icon className="h-6 w-6 text-white" />
+                                    <feature.icon className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                                 </div>
-                                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                                <p className="text-sm text-muted-foreground">{feature.description}</p>
+                                <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">{feature.title}</h3>
+                                <p className="text-xs sm:text-sm text-muted-foreground">{feature.description}</p>
                             </Card>
                         ))}
                     </div>
 
                     {/* Trust Badge */}
-                    <div className="mt-16 flex items-center gap-3 text-sm text-muted-foreground">
-                        <Shield className="h-5 w-5 text-status-healthy" />
+                    <div className="mt-10 sm:mt-16 flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-muted-foreground px-4 text-center">
+                        <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-status-healthy flex-shrink-0" />
                         <span>Seus dados são protegidos com criptografia de ponta</span>
                     </div>
                 </main>

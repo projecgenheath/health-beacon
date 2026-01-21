@@ -10,3 +10,8 @@ export { DashboardSkeleton } from './DashboardSkeleton';
 export { HealthGoalsSkeleton } from './HealthGoalsSkeleton';
 export { AnalyticsSkeleton } from './AnalyticsSkeleton';
 export { CompareExamsSkeleton } from './CompareExamsSkeleton';
+export {
+    HealthTrendsSkeleton,
+    HealthScoreSkeleton,
+    QuickActionsSkeleton
+} from './NewComponentsSkeleton';
