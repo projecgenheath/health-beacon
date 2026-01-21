@@ -207,7 +207,8 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   // Process files function with useCallback for stable reference
   const processFiles = useCallback(async (filesToProcess?: FileWithPreview[]) => {
     // Use provided files or get current files from state
-    const currentFiles = filesToProcess || files;
+    // Ensure filesToProcess is an array (to avoid event objects being passed accidentally)
+    const currentFiles = Array.isArray(filesToProcess) ? filesToProcess : files;
     if (!user) {
       console.error('[Upload] Process called without user session');
       toast({
@@ -634,7 +635,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           {/* Process button */}
           {files.some((f) => f.status === 'pending') && !isProcessing && (
             <button
-              onClick={processFiles}
+              onClick={() => processFiles()}
               disabled={isProcessing || !user}
               className={cn(
                 'w-full py-3 px-4 rounded-xl font-medium transition-all duration-300',
