@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate, useLocation } from 'react-router-dom';
-import logoImg from '@/assets/logo.png';
+import logoImg from '@/assets/logo.svg';
 
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { user, loading } = useAuth();

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Medical Cross -->
+  <path d="M35 15 L65 15 Q70 15 70 20 L70 35 L85 35 Q90 35 90 40 L90 60 Q90 65 85 65 L70 65 L70 80 Q70 85 65 85 L35 85 Q30 85 30 80 L30 65 L15 65 Q10 65 10 60 L10 40 Q10 35 15 35 L30 35 L30 20 Q30 15 35 15 Z" 
+        stroke="url(#gradient)" 
+        stroke-width="4" 
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+  <!-- DNA Helix -->
+  <path d="M38 25 Q50 35 62 25 M38 40 Q50 50 62 40 M38 55 Q50 65 62 55 M38 70 Q50 80 62 70" 
+        stroke="url(#gradient)" 
+        stroke-width="3.5" 
+        fill="none"
+        stroke-linecap="round"/>
+  <!-- DNA connecting lines -->
+  <path d="M44 30 L56 30 M44 45 L56 45 M44 60 L56 60 M44 75 L56 75" 
+        stroke="url(#gradient)" 
+        stroke-width="2.5" 
+        fill="none"
+        stroke-linecap="round"/>
+</svg>

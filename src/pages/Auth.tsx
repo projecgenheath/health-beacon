@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
-import logoImg from '@/assets/logo.png';
+import logoImg from '@/assets/logo.svg';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { z } from 'zod';
 

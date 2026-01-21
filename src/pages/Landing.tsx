@@ -28,7 +28,7 @@ import {
     Lock,
     Mail,
 } from 'lucide-react';
-import logoImg from '@/assets/logo.png';
+import logoImg from '@/assets/logo.svg';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { storePendingFile, getPendingFile } from '@/lib/storage';
 

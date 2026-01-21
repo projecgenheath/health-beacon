@@ -1,5 +1,5 @@
 import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard } from 'lucide-react';
-import logoImg from '@/assets/logo.png';
+import logoImg from '@/assets/logo.svg';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/components/theme-provider';

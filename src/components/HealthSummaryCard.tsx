@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { HealthSummary } from '@/types/exam';
 import { CheckCircle2, AlertTriangle, AlertCircle, ArrowLeftRight, Sparkles } from 'lucide-react';
-import logoImg from '@/assets/logo.png';
+import logoImg from '@/assets/logo.svg';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
