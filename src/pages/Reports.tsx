@@ -109,7 +109,7 @@ const Reports = () => {
             yPos += 8;
             doc.setFontSize(10);
             doc.setTextColor(100, 100, 100);
-            doc.text('Gerado pelo Health Beacon', margin, yPos);
+            doc.text('Gerado pelo BHB (Biomedical Health Bank)', margin, yPos);
 
             // Metadados do Relatório
             yPos += 15;
@@ -248,14 +248,14 @@ const Reports = () => {
                 doc.setFontSize(8);
                 doc.setTextColor(150, 150, 150);
                 doc.text(
-                    `Página ${i} de ${pageCount} - Gerado por Health Beacon`,
+                    `Página ${i} de ${pageCount} - Gerado por BHB`,
                     pageWidth / 2,
                     doc.internal.pageSize.getHeight() - 10,
                     { align: 'center' }
                 );
             }
 
-            doc.save(`health-beacon-relatorio-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
+            doc.save(`bhb-relatorio-${format(new Date(), 'yyyy-MM-dd-HHmm')}.pdf`);
             toast({
                 title: "Sucesso!",
                 description: "Relatório gerado e baixado com sucesso."

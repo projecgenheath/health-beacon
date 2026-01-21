@@ -83,7 +83,7 @@ export const Header = () => {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg gradient-primary">
                       <Activity className="h-4 w-4 text-primary-foreground" />
                     </div>
-                    <SheetTitle className="text-xl font-bold">Health Beacon</SheetTitle>
+                    <SheetTitle className="text-xl font-bold">BHB (Biomedical Health Bank)</SheetTitle>
                   </div>
                 </SheetHeader>
                 <div className="flex flex-col gap-1 p-4">
