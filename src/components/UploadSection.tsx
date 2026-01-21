@@ -41,7 +41,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const [lastExamId, setLastExamId] = useState<string | undefined>();
   const [lastExamDate, setLastExamDate] = useState<string | undefined>();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { syncGoals } = useSyncGoalsWithExams();
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -315,27 +315,51 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         setCurrentStep('analyzing');
         setOverallProgress(baseProgress + fileProgressWeight * 0.5);
 
-        const { data: result, error: functionError } = await supabase.functions.invoke('process-exam', {
-          body: {
+        if (!session?.access_token) {
+          throw new Error('Sessão inválida');
+        }
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const functionUrl = `${supabaseUrl}/functions/v1/process-exam`;
+
+        console.log('[Upload] Calling edge function directly:', functionUrl);
+
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             fileUrl: signedUrlData.signedUrl,
             fileName: file.name,
             examId: examData.id,
-          },
+          }),
         });
 
-        // Check for errors in both error field and data.error field
-        if (functionError) {
-          console.error('[Upload] Edge function error:', functionError);
-          throw new Error(functionError.message || 'Falha ao processar o exame');
+        let result;
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          result = await response.json();
+        } else {
+          try {
+            const textText = await response.text();
+            // Try parsing JSON anyway just in case content-type is missing
+            try {
+              result = JSON.parse(textText);
+            } catch {
+              if (!response.ok) throw new Error(textText || `Erro HTTP ${response.status}`);
+            }
+          } catch (e) {
+            // ignore
+          }
         }
 
-        // Check if the response contains an error (for status code errors)
-        if (result && typeof result === 'object' && 'error' in result) {
-          const errorMessage = result.error as string;
-          console.error('[Upload] Edge function returned error:', errorMessage);
+        if (!response.ok) {
+          const errorMessage = result?.error || 'Falha ao processar o exame';
+          console.error('[Upload] Edge function returned error:', errorMessage, result);
 
-          // Special handling for patient mismatch
-          if (errorMessage.includes('não pertence ao paciente')) {
+          if (typeof errorMessage === 'string' && (errorMessage.includes('não pertence ao paciente') || errorMessage.includes('Documento não pertence'))) {
             throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
           }
 
