@@ -319,57 +319,52 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           throw new Error('Sessão inválida');
         }
 
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const functionUrl = `${supabaseUrl}/functions/v1/process-exam`;
+        console.log('[Upload] Invoking process-exam function...');
 
-        console.log('[Upload] Calling edge function directly:', functionUrl);
-
-        const response = await fetch(functionUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
+        // Usando invoke para garantir gerenciamento correto de sessão/token
+        const { data: result, error: functionError } = await supabase.functions.invoke('process-exam', {
+          body: {
             fileUrl: signedUrlData.signedUrl,
             fileName: file.name,
             examId: examData.id,
-          }),
+          },
         });
 
-        let result: any;
-        const responseText = await response.text();
-        console.log('[Upload] Raw response body:', responseText);
+        if (functionError) {
+          console.error('[Upload] Function Error:', functionError);
 
-        try {
-          if (responseText) {
-            result = JSON.parse(responseText);
+          // Tentativa desesperada de ler o corpo do erro
+          let errorBody = null;
+          try {
+            if (functionError && typeof (functionError as any).context?.json === 'function') {
+              errorBody = await (functionError as any).context.json();
+              console.log('[Upload] Extracted error body from context:', errorBody);
+            }
+          } catch (e) {
+            console.log('[Upload] Could not extract JSON from error context');
           }
-        } catch (e) {
-          console.error('[Upload] Failed to parse response JSON:', e);
+
+          const combinedError = JSON.stringify({
+            msg: functionError.message,
+            body: errorBody
+          });
+
+          if (combinedError.includes('não pertence ao paciente') || combinedError.includes('Documento não pertence')) {
+            throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
+          }
+
+          throw new Error(functionError.message || 'Falha ao processar o exame');
         }
 
-        if (!response.ok) {
-          // Tenta extrair a mensagem de erro de várias propriedades possíveis
-          let errorMessage = result?.error?.message || result?.error || result?.message || responseText || 'Falha ao processar o exame';
+        if (result && result.error) {
+          const errorMessage = typeof result.error === 'string' ? result.error : JSON.stringify(result.error);
+          console.error('[Upload] Logical error in result:', errorMessage);
 
-          if (typeof errorMessage === 'object') {
-            errorMessage = JSON.stringify(errorMessage);
-          }
-
-          console.error('[Upload] Edge function returned error (parsed):', errorMessage);
-
-          const errorString = String(errorMessage);
-
-          if (errorString.includes('não pertence ao paciente') || errorString.includes('Documento não pertence')) {
+          if (errorMessage.includes('não pertence ao paciente') || errorMessage.includes('Documento não pertence')) {
             throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
           }
 
-          if (result?.details?.name_match === false || result?.details?.dob_match === false) {
-            throw new Error('❌ Documento não pertence ao paciente cadastrado. Verifique se o exame está em seu nome.');
-          }
-
-          throw new Error(errorString);
+          throw new Error(errorMessage);
         }
 
         // Step 5: Complete
@@ -674,7 +669,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
                 'flex items-center justify-center gap-2'
               )}
             >
-              Processar {files.filter((f) => f.status === 'pending').length} Exame(s)
+              Analisar {files.filter((f) => f.status === 'pending').length} Exame(s)
             </button>
           )}
         </div>
