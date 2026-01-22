@@ -26,7 +26,7 @@ export const AIInsightsWidget = ({ exams }: AIInsightsWidgetProps) => {
         {
             title: "Destaque do Mês",
             description: alteredExams.length > 0
-                ? `Foco em monitorar seu ${alteredExams[0].name}, que apresentou variação.`
+                ? `Atenção ao indicador ${alteredExams[0].name}. Recomendamos acompanhamento.`
                 : "Continue mantendo seus hábitos saudáveis para preservar os ótimos resultados.",
             icon: Sparkles,
             color: "text-primary",
