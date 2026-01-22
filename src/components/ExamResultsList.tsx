@@ -225,7 +225,7 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                                 {exam.description && (
                                     <div className="mb-3">
                                         <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                                            <FileText className="h-3 w-3" /> Achados
+                                            <FileText className="h-3 w-3" /> Observações
                                         </p>
                                         <p className="text-sm text-foreground/80 line-clamp-3">
                                             {exam.description}
