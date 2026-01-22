@@ -293,7 +293,7 @@ serve(async (req: Request) => {
     const prompt = `You are an expert medical document parser. Analyze the provided document and extract all medical exam information.
 
 FIRST, identify the type of exam:
-- "laboratory": Blood tests, urine tests, biochemistry, hematology, etc. (with numeric values)
+- "laboratory": Blood tests, urine tests, biochemistry, hematology, immunology, serology (HIV, Hepatitis), etc.
 - "imaging": X-rays, CT scans, MRI, Ultrasound, Mammography, etc. (descriptive reports)
 - "pathology": Biopsies, cytology, histopathology, etc. (descriptive findings)
 
@@ -308,41 +308,37 @@ Return ONLY valid JSON in this exact format, with no extra text or markdown:
   "results": [
     {
       "name": "string (exam name)",
-      "value": number or null (ONLY for laboratory exams with numeric results),
-      "text_value": "string or null (for imaging/pathology descriptive results)",
+      "value": number or null (ONLY for quantitative results),
+      "text_value": "string or null (for qualitative results like 'Non-Reactive', 'Negative', 'Detected' OR imaging findings)",
       "unit": "string or null",
       "reference_min": number or null,
       "reference_max": number or null,
-      "category": "string (e.g., 'Hematologia', 'Bioquímica', 'Radiologia', 'Patologia')",
+      "category": "string (e.g., 'Hematologia', 'Imunologia', 'Hormônios')",
       "status": "healthy" | "warning" | "danger" | "normal" | "abnormal",
       "exam_type": "laboratory" | "imaging" | "pathology",
-      "description": "string or null (detailed findings for imaging/pathology)",
-      "conclusion": "string or null (doctor's conclusion for this specific result)"
+      "description": "string or null",
+      "conclusion": "string or null"
     }
   ]
 }
 
 RULES:
 1. For LABORATORY exams:
-   - Use "value" field with numeric values (convert commas to dots: 1,05 → 1.05)
-   - Set status based on reference values: "healthy" if within range, "warning" if slightly out, "danger" if significantly out
-   - Include reference_min and reference_max when available
+   - If numeric: Use "value" field (e.g., Glucose: 90).
+   - If qualitative (Text): Use "text_value" field (e.g., HIV: "Non-Reactive", Blood Type: "A+").
+   - Set "status":
+     - "healthy"/"normal": for "Non-Reactive", "Negative", "Undetected", "Within limits".
+     - "warning"/"abnormal": for "Reactive", "Positive", "Detected" (unless expected).
+   - Convert numeric commas to dots: 1,05 → 1.05
 
-2. For IMAGING exams (Raio-X, Tomografia, Ressonância, Ultrassom):
-   - Use "text_value" for the findings (e.g., "Sem alterações", "Consolidação em lobo inferior")
-   - Set status to "normal" if no abnormalities, "abnormal" if any finding
-   - Include "description" with detailed findings
-   - Include "conclusion" with the radiologist's impression
+2. For IMAGING exams:
+   - Use "text_value" for the findings.
+   - Use "description" for details.
 
-3. For PATHOLOGY exams (Biópsias, Citologia):
-   - Use "text_value" for the diagnosis (e.g., "Adenocarcinoma", "Hiperplasia benigna")
-   - Set status to "normal" for benign findings, "abnormal" for malignant/concerning findings
-   - Include "description" with microscopic findings
-   - Include "conclusion" with the pathologist's diagnosis
+3. For PATHOLOGY exams:
+   - Use "text_value" for the diagnosis.
 
-4. Extract the exam date (look for "data de coleta", "data do exame", "data de cadastro")
-5. Extract the laboratory/clinic name
-6. Extract the patient's full name and date of birth`;
+4. Extract the exam date, laboratory name, patient name and DOB.`;
 
 
     // Use Google AI Direct API with retry
