@@ -219,6 +219,9 @@ serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    console.log('Auth header present:', !!authHeader);
+    console.log('Auth header starts with:', authHeader?.substring(0, 30) + '...');
+
     if (!authHeader) {
       console.error('Missing authorization header');
       return new Response(
@@ -237,10 +240,12 @@ serve(async (req: Request) => {
     if (userError || !user) {
       console.error('Unauthorized user:', userError);
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('User authenticated:', user.id);
 
     const { fileUrl, fileName, examId } = await req.json();
 
