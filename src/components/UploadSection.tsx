@@ -315,10 +315,16 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
         setCurrentStep('analyzing');
         setOverallProgress(baseProgress + fileProgressWeight * 0.5);
 
-        if (!session?.access_token) {
-          throw new Error('Sessão inválida');
+        // Refresh session to ensure we have a valid token
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError || !sessionData.session) {
+          console.error('[Upload] Session error:', sessionError);
+          throw new Error('Sessão inválida. Por favor, faça login novamente.');
         }
 
+        const currentAccessToken = sessionData.session.access_token;
+        console.log('[Upload] Got fresh session, token starts with:', currentAccessToken?.substring(0, 20) + '...');
         console.log('[Upload] Invoking process-exam function...');
 
         // Usando invoke para garantir gerenciamento correto de sessão/token
@@ -327,6 +333,9 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
             fileUrl: signedUrlData.signedUrl,
             fileName: file.name,
             examId: examData.id,
+          },
+          headers: {
+            Authorization: `Bearer ${currentAccessToken}`,
           },
         });
 
