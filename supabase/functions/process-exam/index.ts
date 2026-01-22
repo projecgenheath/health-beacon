@@ -96,6 +96,83 @@ const BIOLOGICAL_LIMITS: Record<string, { min: number; max: number; unit?: strin
   'POTASSIO': { min: 2, max: 10, unit: 'mEq/L' },
 };
 
+// Retry with exponential backoff for API calls
+interface RetryConfig {
+  maxRetries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+  retryableStatuses: number[];
+}
+
+const DEFAULT_RETRY_CONFIG: RetryConfig = {
+  maxRetries: 3,
+  baseDelayMs: 1000,
+  maxDelayMs: 8000,
+  retryableStatuses: [429, 503, 500, 502, 504],
+};
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  config: RetryConfig = DEFAULT_RETRY_CONFIG
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= config.maxRetries; attempt++) {
+    try {
+      console.log(`API call attempt ${attempt + 1}/${config.maxRetries + 1}...`);
+
+      const response = await fetch(url, options);
+
+      // If successful or non-retryable error, return immediately
+      if (response.ok || !config.retryableStatuses.includes(response.status)) {
+        return response;
+      }
+
+      // Log the retryable error
+      const errorText = await response.text();
+      console.warn(`Retryable error (${response.status}): ${errorText}`);
+
+      // If this was the last attempt, throw the error
+      if (attempt === config.maxRetries) {
+        throw new Error(`API request failed after ${config.maxRetries + 1} attempts: ${response.status} - ${errorText}`);
+      }
+
+      // Calculate delay with exponential backoff + jitter
+      const exponentialDelay = config.baseDelayMs * Math.pow(2, attempt);
+      const jitter = Math.random() * 500; // Add up to 500ms of random jitter
+      const delay = Math.min(exponentialDelay + jitter, config.maxDelayMs);
+
+      console.log(`Waiting ${Math.round(delay)}ms before retry...`);
+      await sleep(delay);
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // If this was the last attempt, throw
+      if (attempt === config.maxRetries) {
+        throw lastError;
+      }
+
+      // Calculate delay for network errors
+      const delay = Math.min(
+        config.baseDelayMs * Math.pow(2, attempt) + Math.random() * 500,
+        config.maxDelayMs
+      );
+
+      console.warn(`Network error on attempt ${attempt + 1}: ${lastError.message}. Retrying in ${Math.round(delay)}ms...`);
+      await sleep(delay);
+    }
+  }
+
+  // This should never be reached, but TypeScript needs it
+  throw lastError || new Error('Unknown error during retry');
+}
+
 function validateBiologicalValue(examName: string, value: number): ValidationResult {
   const normalizedName = examName.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -263,8 +340,8 @@ RULES:
 6. Extract the patient's full name and date of birth`;
 
 
-    // Use Google AI Direct API
-    const geminiResponse = await fetch(geminiUrl, {
+    // Use Google AI Direct API with retry
+    const geminiResponse = await fetchWithRetry(geminiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
