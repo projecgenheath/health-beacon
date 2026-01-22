@@ -10,8 +10,8 @@ interface AIInsightsWidgetProps {
 
 export const AIInsightsWidget = ({ exams }: AIInsightsWidgetProps) => {
     // Basic logic to generate "mock" insights based on data
-    const alteredExams = exams.filter(e => e.status !== 'healthy');
-    const healthyExams = exams.filter(e => e.status === 'healthy');
+    const alteredExams = exams.filter(e => ['warning', 'danger', 'abnormal'].includes(e.status));
+    const healthyExams = exams.filter(e => ['healthy', 'normal'].includes(e.status));
 
     const insights = [
         {
