@@ -529,7 +529,7 @@ RULES:
           value: parsedValue,
           // Store the text value for imaging/pathology exams
           text_value: result.text_value?.trim() || null,
-          unit: result.unit?.trim() || (isNumeric ? '-' : null),
+          unit: result.unit?.trim() || '-',
           reference_min: result.reference_min ?? null,
           reference_max: result.reference_max ?? null,
           category: result.category?.trim() || 'Geral',
