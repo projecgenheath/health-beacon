@@ -48,25 +48,28 @@ export const HealthSummaryCard = ({ summary, onStatusClick, activeStatuses = [] 
         {/* Health Score Circle */}
         <div className="flex items-center justify-center mb-4 sm:mb-6">
           <div className="relative group">
-            <svg className="h-28 w-28 sm:h-36 sm:w-36 -rotate-90 transform transition-transform duration-500 group-hover:scale-105">
+            <svg
+              className="h-28 w-28 sm:h-36 sm:w-36 -rotate-90 transform transition-transform duration-500 group-hover:scale-105"
+              viewBox="0 0 100 100"
+            >
               <circle
-                cx="50%"
-                cy="50%"
-                r="40%"
+                cx="50"
+                cy="50"
+                r="40"
                 fill="none"
                 stroke="hsl(var(--muted))"
-                strokeWidth="12"
-                className="opacity-50"
+                strokeWidth="8"
+                className="opacity-20"
               />
               <circle
-                cx="50%"
-                cy="50%"
-                r="40%"
+                cx="50"
+                cy="50"
+                r="40"
                 fill="none"
                 stroke="url(#healthGradient)"
-                strokeWidth="12"
+                strokeWidth="8"
                 strokeLinecap="round"
-                strokeDasharray={`${healthPercentage * 2.51} 251`}
+                strokeDasharray={`${(healthPercentage / 100) * 251.2} 251.2`}
                 className="transition-all duration-1000 ease-out drop-shadow-lg"
                 style={{ filter: 'drop-shadow(0 0 8px hsl(var(--status-healthy) / 0.5))' }}
               />
