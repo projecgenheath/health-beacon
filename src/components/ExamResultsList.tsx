@@ -180,9 +180,9 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
                         </div>
 
                         {/* Display based on exam type */}
-                        {isLabExam ? (
+                        {isLabExam && (exam.value || !exam.textValue) ? (
                             <>
-                                {/* Value display for laboratory exams */}
+                                {/* Value display for quantitative laboratory exams */}
                                 <div className="flex items-baseline gap-3 mb-3">
                                     <span className={cn('text-3xl font-bold tabular-nums', getStatusColorClass())}>
                                         {exam.value}
