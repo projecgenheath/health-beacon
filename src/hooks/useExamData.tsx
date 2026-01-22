@@ -129,9 +129,9 @@ export const useExamData = () => {
         }
       });
 
-      // Calculate summary
-      const healthy = latestExams.filter((e) => e.status === 'healthy').length;
-      const warning = latestExams.filter((e) => e.status === 'warning').length;
+      // Calculate summary - Include 'normal' status in healthy count
+      const healthy = latestExams.filter((e) => ['healthy', 'normal'].includes(e.status)).length;
+      const warning = latestExams.filter((e) => ['warning', 'abnormal'].includes(e.status)).length;
       const danger = latestExams.filter((e) => e.status === 'danger').length;
 
       // Get the most recent date
