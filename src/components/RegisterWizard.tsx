@@ -8,15 +8,17 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import {
     Mail, Lock, User, MapPin, Phone, Heart,
     ArrowRight, ArrowLeft, Check, Sparkles,
-    Calendar, Shield, FileText
+    Calendar, Shield, FileText, Scale, AlertTriangle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { z } from 'zod';
 import logoImg from '@/assets/logo.svg';
+import { TermsOfService, PrivacyPolicy, DataSharingConsent } from '@/components/legal';
 
 const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'Senha deve ter pelo menos 6 caracteres');
@@ -50,6 +52,11 @@ interface FormData {
     height: string;
     allergies: string;
     chronic_diseases: string;
+    // Terms acceptance
+    acceptTermsOfService: boolean;
+    acceptPrivacyPolicy: boolean;
+    acceptDataSharing: boolean;
+    acceptAILimitations: boolean;
 }
 
 const STEPS = [
@@ -58,6 +65,7 @@ const STEPS = [
     { id: 3, title: 'Endereço', icon: MapPin, description: 'Onde você mora' },
     { id: 4, title: 'Contato', icon: Phone, description: 'Como te encontrar' },
     { id: 5, title: 'Saúde', icon: Heart, description: 'Seu perfil médico' },
+    { id: 6, title: 'Termos', icon: Scale, description: 'Aceite obrigatório' },
 ];
 
 // CPF mask
@@ -111,6 +119,11 @@ export const RegisterWizard = () => {
         height: '',
         allergies: '',
         chronic_diseases: '',
+        // Terms acceptance
+        acceptTermsOfService: false,
+        acceptPrivacyPolicy: false,
+        acceptDataSharing: false,
+        acceptAILimitations: false,
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -154,6 +167,30 @@ export const RegisterWizard = () => {
                 if (formData.password !== formData.confirmPassword) {
                     newErrors.confirmPassword = 'Senhas não coincidem';
                 }
+                // CPF is now required
+                if (!formData.cpf) {
+                    newErrors.cpf = 'CPF é obrigatório';
+                } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
+                    newErrors.cpf = 'CPF deve ter 11 dígitos';
+                }
+                // Birth date is now required
+                if (!formData.birth_date) {
+                    newErrors.birth_date = 'Data de nascimento é obrigatória';
+                }
+                break;
+            case 6:
+                if (!formData.acceptTermsOfService) {
+                    newErrors.acceptTermsOfService = 'Você deve aceitar os Termos de Uso';
+                }
+                if (!formData.acceptPrivacyPolicy) {
+                    newErrors.acceptPrivacyPolicy = 'Você deve aceitar a Política de Privacidade';
+                }
+                if (!formData.acceptDataSharing) {
+                    newErrors.acceptDataSharing = 'Você deve aceitar o Termo de Consentimento';
+                }
+                if (!formData.acceptAILimitations) {
+                    newErrors.acceptAILimitations = 'Você deve reconhecer as limitações da IA';
+                }
                 break;
             // Other steps are optional, no required validation
         }
@@ -192,6 +229,27 @@ export const RegisterWizard = () => {
         if (!validateStep(currentStep)) return;
 
         setIsSubmitting(true);
+
+        // Check if CPF is available before creating account
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: cpfCheck, error: cpfError } = await (supabase as any)
+                .rpc('check_cpf_available', { p_cpf: formData.cpf });
+
+            if (cpfError) {
+                console.error('CPF check error:', cpfError);
+            } else if (cpfCheck && !cpfCheck.available) {
+                toast.error(cpfCheck.message || 'Este CPF já está cadastrado no sistema');
+                setIsSubmitting(false);
+                // Go back to step 1 to fix the CPF
+                setCurrentStep(1);
+                setErrors(prev => ({ ...prev, cpf: cpfCheck.message || 'CPF já cadastrado' }));
+                return;
+            }
+        } catch (err) {
+            console.error('Error checking CPF:', err);
+            // Continue with registration if check fails (it will be caught by DB constraint)
+        }
 
         const { data, error: signUpError } = await signUp(formData.email, formData.password, formData.full_name);
 
@@ -437,6 +495,55 @@ export const RegisterWizard = () => {
                                             )}
                                         </div>
                                     </div>
+
+                                    {/* CPF and Birth Date - Required fields */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="cpf" className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-primary" />
+                                                CPF *
+                                            </Label>
+                                            <Input
+                                                id="cpf"
+                                                value={formData.cpf}
+                                                onChange={(e) => handleInputChange('cpf', e.target.value)}
+                                                placeholder="000.000.000-00"
+                                                maxLength={14}
+                                                className={cn(
+                                                    "transition-all",
+                                                    errors.cpf && "border-destructive focus:ring-destructive",
+                                                    formData.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && "border-status-healthy"
+                                                )}
+                                            />
+                                            {errors.cpf && (
+                                                <p className="text-xs text-destructive animate-fade-in">{errors.cpf}</p>
+                                            )}
+                                            <p className="text-xs text-muted-foreground">
+                                                O CPF é utilizado para identificação única e recuperação de conta
+                                            </p>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label htmlFor="birth_date" className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 text-primary" />
+                                                Data de Nascimento *
+                                            </Label>
+                                            <Input
+                                                id="birth_date"
+                                                type="date"
+                                                value={formData.birth_date}
+                                                onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                                                className={cn(
+                                                    "transition-all",
+                                                    errors.birth_date && "border-destructive focus:ring-destructive",
+                                                    formData.birth_date && !errors.birth_date && "border-status-healthy"
+                                                )}
+                                            />
+                                            {errors.birth_date && (
+                                                <p className="text-xs text-destructive animate-fade-in">{errors.birth_date}</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -455,35 +562,6 @@ export const RegisterWizard = () => {
                                 </div>
 
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="birth_date" className="flex items-center gap-2">
-                                            <Calendar className="h-4 w-4 text-primary" />
-                                            Data de Nascimento
-                                        </Label>
-                                        <Input
-                                            id="birth_date"
-                                            type="date"
-                                            value={formData.birth_date}
-                                            onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                                            className={cn(formData.birth_date && "border-status-healthy")}
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="cpf" className="flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-primary" />
-                                            CPF
-                                        </Label>
-                                        <Input
-                                            id="cpf"
-                                            value={formData.cpf}
-                                            onChange={(e) => handleInputChange('cpf', e.target.value)}
-                                            placeholder="000.000.000-00"
-                                            maxLength={14}
-                                            className={cn(formData.cpf.length === 14 && "border-status-healthy")}
-                                        />
-                                    </div>
-
                                     <div className="space-y-2">
                                         <Label>Sexo Biológico</Label>
                                         <Select onValueChange={(val) => handleInputChange('sex', val)} value={formData.sex}>
@@ -737,6 +815,164 @@ export const RegisterWizard = () => {
                                 </div>
                             </div>
                         )}
+
+                        {/* Step 6: Terms and Consent */}
+                        {currentStep === 6 && (
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center">
+                                        <Scale className="h-5 w-5 text-primary-foreground" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-lg">Termos e Consentimentos</h3>
+                                        <p className="text-sm text-muted-foreground">Leia e aceite os termos obrigatórios</p>
+                                    </div>
+                                </div>
+
+                                {/* AI Warning Banner */}
+                                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl mb-6">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                        <div>
+                                            <h4 className="font-bold text-amber-700 dark:text-amber-400">Aviso Importante sobre Inteligência Artificial</h4>
+                                            <p className="text-sm text-amber-800 dark:text-amber-300 mt-1">
+                                                As análises geradas por IA nesta plataforma são meramente informativas e
+                                                <strong> PODEM CONTER ERROS, IMPRECISÕES OU FALHAS</strong>. Elas NÃO substituem
+                                                a avaliação de um profissional de saúde qualificado. SEMPRE consulte um médico
+                                                para diagnósticos e tratamentos.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Terms of Service */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-semibold flex items-center gap-2">
+                                            <FileText className="h-4 w-4 text-primary" />
+                                            Termos de Uso
+                                        </h4>
+                                        <TermsOfService />
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Checkbox
+                                                id="acceptTermsOfService"
+                                                checked={formData.acceptTermsOfService}
+                                                onCheckedChange={(checked) =>
+                                                    setFormData(prev => ({ ...prev, acceptTermsOfService: checked === true }))
+                                                }
+                                                className={cn(errors.acceptTermsOfService && "border-destructive")}
+                                            />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <label
+                                                    htmlFor="acceptTermsOfService"
+                                                    className="text-sm font-medium leading-none cursor-pointer"
+                                                >
+                                                    Li e aceito os Termos de Uso *
+                                                </label>
+                                                {errors.acceptTermsOfService && (
+                                                    <p className="text-xs text-destructive">{errors.acceptTermsOfService}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Privacy Policy */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-semibold flex items-center gap-2">
+                                            <Shield className="h-4 w-4 text-primary" />
+                                            Política de Privacidade
+                                        </h4>
+                                        <PrivacyPolicy />
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Checkbox
+                                                id="acceptPrivacyPolicy"
+                                                checked={formData.acceptPrivacyPolicy}
+                                                onCheckedChange={(checked) =>
+                                                    setFormData(prev => ({ ...prev, acceptPrivacyPolicy: checked === true }))
+                                                }
+                                                className={cn(errors.acceptPrivacyPolicy && "border-destructive")}
+                                            />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <label
+                                                    htmlFor="acceptPrivacyPolicy"
+                                                    className="text-sm font-medium leading-none cursor-pointer"
+                                                >
+                                                    Li e aceito a Política de Privacidade *
+                                                </label>
+                                                {errors.acceptPrivacyPolicy && (
+                                                    <p className="text-xs text-destructive">{errors.acceptPrivacyPolicy}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Data Sharing Consent */}
+                                    <div className="space-y-3">
+                                        <h4 className="font-semibold flex items-center gap-2">
+                                            <Heart className="h-4 w-4 text-primary" />
+                                            Termo de Consentimento para Dados de Saúde
+                                        </h4>
+                                        <DataSharingConsent />
+                                        <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                                            <Checkbox
+                                                id="acceptDataSharing"
+                                                checked={formData.acceptDataSharing}
+                                                onCheckedChange={(checked) =>
+                                                    setFormData(prev => ({ ...prev, acceptDataSharing: checked === true }))
+                                                }
+                                                className={cn(errors.acceptDataSharing && "border-destructive")}
+                                            />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <label
+                                                    htmlFor="acceptDataSharing"
+                                                    className="text-sm font-medium leading-none cursor-pointer"
+                                                >
+                                                    Li e aceito o Termo de Consentimento para Compartilhamento de Dados de Saúde *
+                                                </label>
+                                                {errors.acceptDataSharing && (
+                                                    <p className="text-xs text-destructive">{errors.acceptDataSharing}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* AI Limitations Acknowledgment */}
+                                    <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-xl">
+                                        <div className="flex items-start gap-3">
+                                            <Checkbox
+                                                id="acceptAILimitations"
+                                                checked={formData.acceptAILimitations}
+                                                onCheckedChange={(checked) =>
+                                                    setFormData(prev => ({ ...prev, acceptAILimitations: checked === true }))
+                                                }
+                                                className={cn(
+                                                    "mt-0.5",
+                                                    errors.acceptAILimitations && "border-destructive"
+                                                )}
+                                            />
+                                            <div className="grid gap-1.5 leading-none">
+                                                <label
+                                                    htmlFor="acceptAILimitations"
+                                                    className="text-sm font-bold leading-tight cursor-pointer text-destructive"
+                                                >
+                                                    Reconheço que as análises de IA podem apresentar erros e falhas *
+                                                </label>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    Confirmo que estou ciente de que a Inteligência Artificial utilizada nesta
+                                                    plataforma pode cometer erros, apresentar imprecisões e gerar resultados
+                                                    incorretos. Entendo que devo SEMPRE consultar um profissional de saúde
+                                                    qualificado para obter diagnósticos, tratamentos e orientações médicas,
+                                                    e que não devo basear decisões médicas exclusivamente nas análises da IA.
+                                                </p>
+                                                {errors.acceptAILimitations && (
+                                                    <p className="text-xs text-destructive font-medium">{errors.acceptAILimitations}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Navigation Buttons */}
@@ -786,22 +1022,21 @@ export const RegisterWizard = () => {
                         )}
                     </div>
 
-                    {/* Skip optional steps */}
-                    {currentStep > 1 && currentStep < STEPS.length && (
+                    {/* Skip optional steps - go to terms (step 6 is mandatory) */}
+                    {currentStep > 1 && currentStep < STEPS.length - 1 && (
                         <div className="text-center mt-4">
                             <Button
                                 type="button"
                                 variant="link"
                                 onClick={() => {
+                                    // Mark current step as completed and skip to Terms (step 6)
                                     setCompletedSteps(prev => [...prev, currentStep]);
-                                    if (currentStep < STEPS.length) {
-                                        setDirection('forward');
-                                        setCurrentStep(STEPS.length);
-                                    }
+                                    setDirection('forward');
+                                    setCurrentStep(STEPS.length); // Go to last step (Terms)
                                 }}
                                 className="text-muted-foreground text-sm"
                             >
-                                Pular etapas opcionais e finalizar
+                                Pular etapas opcionais e ir para os Termos
                             </Button>
                         </div>
                     )}

@@ -26,6 +26,9 @@ const Auth = () => {
 
   // Recovery and Reset state
   const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [recoveryCpf, setRecoveryCpf] = useState('');
+  const [recoveryMethod, setRecoveryMethod] = useState<'email' | 'cpf'>('email');
+  const [cpfEmailHint, setCpfEmailHint] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [view, setView] = useState<'login' | 'register' | 'forgot-password' | 'reset-password'>('login');
@@ -198,8 +201,71 @@ const Auth = () => {
     setIsSubmitting(false);
   };
 
+  // CPF Formatting
+  const formatCPF = (value: string) => {
+    return value
+      .replace(/\D/g, '')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+      .replace(/(-\d{2})\d+?$/, '$1');
+  };
+
+  const handleCpfRecoveryRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const cleanCpf = recoveryCpf.replace(/\D/g, '');
+    if (cleanCpf.length !== 11) {
+      toast.error('CPF deve ter 11 dígitos');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase as any)
+        .rpc('lookup_email_by_cpf', { p_cpf: recoveryCpf });
+
+      if (error) {
+        toast.error('Erro ao buscar CPF: ' + error.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!data?.success) {
+        toast.error(data?.message || 'CPF não encontrado no sistema');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Show email hint to user
+      setCpfEmailHint(data.email_hint);
+
+      // Send recovery email
+      const { error: resetError } = await resetPassword(data.email);
+
+      if (resetError) {
+        toast.error('Erro ao enviar email de recuperação: ' + resetError.message);
+      } else {
+        toast.success(`Email de recuperação enviado para ${data.email_hint}`);
+        setView('login');
+      }
+    } catch (err) {
+      console.error('CPF recovery error:', err);
+      toast.error('Erro ao processar recuperação por CPF');
+    }
+
+    setIsSubmitting(false);
+  };
+
   const handleRecoveryRequest = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (recoveryMethod === 'cpf') {
+      return handleCpfRecoveryRequest(e);
+    }
+
     try {
       emailSchema.parse(recoveryEmail);
     } catch (err) {
@@ -312,31 +378,79 @@ const Auth = () => {
                   <div className="space-y-2 text-center mb-4">
                     <h3 className="text-xl font-bold">Recuperar Senha</h3>
                     <p className="text-sm text-muted-foreground">
-                      Digite seu email para receber um link de recuperação.
+                      Escolha como deseja recuperar sua conta.
                     </p>
                   </div>
+
+                  {/* Recovery Method Tabs */}
+                  <div className="flex gap-2 p-1 bg-secondary/50 rounded-lg mb-4">
+                    <Button
+                      type="button"
+                      variant={recoveryMethod === 'email' ? 'default' : 'ghost'}
+                      size="sm"
+                      className={`flex-1 gap-2 ${recoveryMethod === 'email' ? 'shadow-sm' : ''}`}
+                      onClick={() => setRecoveryMethod('email')}
+                    >
+                      <Mail className="h-4 w-4" />
+                      Por Email
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={recoveryMethod === 'cpf' ? 'default' : 'ghost'}
+                      size="sm"
+                      className={`flex-1 gap-2 ${recoveryMethod === 'cpf' ? 'shadow-sm' : ''}`}
+                      onClick={() => setRecoveryMethod('cpf')}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Por CPF
+                    </Button>
+                  </div>
+
                   <form onSubmit={handleRecoveryRequest} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="recovery-email">Email</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                          id="recovery-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          value={recoveryEmail}
-                          onChange={(e) => setRecoveryEmail(e.target.value)}
-                          className="pl-10"
-                          required
-                        />
+                    {recoveryMethod === 'email' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="recovery-email">Email</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="recovery-email"
+                            type="email"
+                            placeholder="seu@email.com"
+                            value={recoveryEmail}
+                            onChange={(e) => setRecoveryEmail(e.target.value)}
+                            className="pl-10"
+                            required
+                          />
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="recovery-cpf">CPF</Label>
+                        <div className="relative">
+                          <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            id="recovery-cpf"
+                            type="text"
+                            placeholder="000.000.000-00"
+                            value={recoveryCpf}
+                            onChange={(e) => setRecoveryCpf(formatCPF(e.target.value))}
+                            className="pl-10"
+                            maxLength={14}
+                            required
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Buscaremos o email associado ao seu CPF e enviaremos o link de recuperação.
+                        </p>
+                      </div>
+                    )}
+
                     <Button
                       type="submit"
                       className="w-full gradient-primary text-primary-foreground hover:opacity-90 shadow-glow-primary"
                       disabled={isSubmitting}
                     >
-                      {isSubmitting ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                      {isSubmitting ? 'Buscando...' : 'Enviar Link de Recuperação'}
                     </Button>
                     <Button
                       type="button"
