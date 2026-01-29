@@ -121,7 +121,7 @@ const ExamResultCard = ({ exam, history }: ExamResultCardProps) => {
         return 'from-muted/20 to-muted/5';
     };
 
-    const hasHistory = history && history.history.length > 1 && examType === 'laboratory';
+    const hasHistory = history && history.history.length > 0 && examType === 'laboratory';
 
     return (
         <Card

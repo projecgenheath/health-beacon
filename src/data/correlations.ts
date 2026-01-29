@@ -138,10 +138,25 @@ export const REFERENCE_RANGES: ReferenceRange[] = [
         ],
     },
     {
+        exam: 'HEMATOCRITO',
+        unit: '%',
+        ranges: [
+            { sex: 'M', ageMin: 18, min: 40, max: 54 },
+            { sex: 'F', ageMin: 18, min: 36, max: 46 },
+        ],
+    },
+    {
         exam: 'GLICOSE',
         unit: 'mg/dL',
         ranges: [
             { sex: 'all', min: 70, max: 99 },
+        ],
+    },
+    {
+        exam: 'HEMOGLOBINA GLICADA',
+        unit: '%',
+        ranges: [
+            { sex: 'all', min: 4.0, max: 5.6 },
         ],
     },
     {
@@ -168,6 +183,13 @@ export const REFERENCE_RANGES: ReferenceRange[] = [
         ],
     },
     {
+        exam: 'VLDL',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 0, max: 30 },
+        ],
+    },
+    {
         exam: 'TRIGLICERIDES',
         unit: 'mg/dL',
         ranges: [
@@ -183,17 +205,180 @@ export const REFERENCE_RANGES: ReferenceRange[] = [
         ],
     },
     {
+        exam: 'UREIA',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 10, max: 50 },
+        ],
+    },
+    {
+        exam: 'ACIDO URICO',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'M', min: 3.4, max: 7.0 },
+            { sex: 'F', min: 2.4, max: 6.0 },
+        ],
+    },
+    {
         exam: 'TSH',
-        unit: 'mUI/L',
+        unit: 'µUI/mL',
         ranges: [
             { sex: 'all', min: 0.4, max: 4.0 },
+        ],
+    },
+    {
+        exam: 'T4 LIVRE',
+        unit: 'ng/dL',
+        ranges: [
+            { sex: 'all', min: 0.7, max: 1.8 },
+        ],
+    },
+    {
+        exam: 'T3 LIVRE',
+        unit: 'pg/mL',
+        ranges: [
+            { sex: 'all', min: 2.3, max: 4.2 },
         ],
     },
     {
         exam: 'VITAMINA D',
         unit: 'ng/mL',
         ranges: [
-            { sex: 'all', min: 30, max: 100 },
+            // Ideal: 30-60 ng/mL, Normal: 20-60 ng/mL, > 20 considerado suficiente
+            { sex: 'all', min: 20, max: 60 },
+        ],
+    },
+    {
+        exam: 'VITAMINA D 25 HIDROXI',
+        unit: 'ng/mL',
+        ranges: [
+            { sex: 'all', min: 20, max: 60 },
+        ],
+    },
+    {
+        exam: 'VITAMINA B12',
+        unit: 'pg/mL',
+        ranges: [
+            { sex: 'all', min: 200, max: 900 },
+        ],
+    },
+    {
+        exam: 'FERRITINA',
+        unit: 'ng/mL',
+        ranges: [
+            { sex: 'M', min: 30, max: 400 },
+            { sex: 'F', min: 15, max: 150 },
+        ],
+    },
+    {
+        exam: 'FERRO SERICO',
+        unit: 'µg/dL',
+        ranges: [
+            { sex: 'M', min: 65, max: 175 },
+            { sex: 'F', min: 50, max: 170 },
+        ],
+    },
+    {
+        exam: 'TRANSFERRINA',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 200, max: 360 },
+        ],
+    },
+    {
+        exam: 'INDICE DE SATURACAO DA TRANSFERRINA',
+        unit: '%',
+        ranges: [
+            { sex: 'M', min: 20, max: 50 },
+            { sex: 'F', min: 15, max: 50 },
+        ],
+    },
+    {
+        exam: 'TGO',
+        unit: 'U/L',
+        ranges: [
+            { sex: 'all', min: 0, max: 40 },
+        ],
+    },
+    {
+        exam: 'TGP',
+        unit: 'U/L',
+        ranges: [
+            { sex: 'all', min: 0, max: 41 },
+        ],
+    },
+    {
+        exam: 'GGT',
+        unit: 'U/L',
+        ranges: [
+            { sex: 'M', min: 0, max: 73 },
+            { sex: 'F', min: 0, max: 42 },
+        ],
+    },
+    {
+        exam: 'FOSFATASE ALCALINA',
+        unit: 'U/L',
+        ranges: [
+            { sex: 'all', min: 30, max: 120 },
+        ],
+    },
+    {
+        exam: 'BILIRRUBINA TOTAL',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 0.2, max: 1.2 },
+        ],
+    },
+    {
+        exam: 'PROTEINAS TOTAIS',
+        unit: 'g/dL',
+        ranges: [
+            { sex: 'all', min: 6.0, max: 8.0 },
+        ],
+    },
+    {
+        exam: 'ALBUMINA',
+        unit: 'g/dL',
+        ranges: [
+            { sex: 'all', min: 3.5, max: 5.0 },
+        ],
+    },
+    {
+        exam: 'PSA',
+        unit: 'ng/mL',
+        ranges: [
+            { sex: 'M', ageMax: 49, min: 0, max: 2.5 },
+            { sex: 'M', ageMin: 50, ageMax: 59, min: 0, max: 3.5 },
+            { sex: 'M', ageMin: 60, ageMax: 69, min: 0, max: 4.5 },
+            { sex: 'M', ageMin: 70, min: 0, max: 6.5 },
+        ],
+    },
+    {
+        exam: 'CALCIO',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 8.5, max: 10.5 },
+        ],
+    },
+    {
+        exam: 'POTASSIO',
+        unit: 'mEq/L',
+        ranges: [
+            { sex: 'all', min: 3.5, max: 5.1 },
+        ],
+    },
+    {
+        exam: 'SODIO',
+        unit: 'mEq/L',
+        ranges: [
+            { sex: 'all', min: 135, max: 145 },
+        ],
+    },
+    {
+        exam: 'MAGNESIO',
+        unit: 'mg/dL',
+        ranges: [
+            { sex: 'all', min: 1.7, max: 2.6 },
         ],
     },
 ];
@@ -217,11 +402,18 @@ export function getReferenceRange(
     age: number
 ): { min: number; max: number; unit: string } | null {
     const normalized = examName.toUpperCase().trim();
-    const examRef = REFERENCE_RANGES.find(
+
+    // Find all matches and pick the most specific one (longest match)
+    // This prevents 'HEMOGLOBINA GLICADA' from matching 'HEMOGLOBINA'
+    const matches = REFERENCE_RANGES.filter(
         (r) => r.exam === normalized || normalized.includes(r.exam)
     );
 
-    if (!examRef) return null;
+    if (matches.length === 0) return null;
+
+    // Sort by length descending to prioritize specific matches
+    matches.sort((a, b) => b.exam.length - a.exam.length);
+    const examRef = matches[0];
 
     // Find the most specific range
     const range = examRef.ranges.find((r) => {

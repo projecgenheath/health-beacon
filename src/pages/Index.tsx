@@ -1,8 +1,7 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useExamData } from '@/hooks/useExamData';
 import { useGoalNotifications } from '@/hooks/useGoalNotifications';
 import { HealthSummaryCard } from '@/components/HealthSummaryCard';
-import { UploadSection } from '@/components/UploadSection';
 import { UploadHistory } from '@/components/UploadHistory';
 import { AlertsSection } from '@/components/AlertsSection';
 import { ExamResultsList } from '@/components/ExamResultsList';
@@ -12,12 +11,13 @@ import { HealthGoals } from '@/components/HealthGoals';
 import { AIInsightsWidget } from '@/components/AIInsightsWidget';
 import { HealthTrendsWidget } from '@/components/HealthTrendsWidget';
 import { QuickActions } from '@/components/QuickActions';
+import { UploadModal } from '@/components/UploadModal';
 import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
 
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
-  const uploadSectionRef = useRef<HTMLDivElement>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   // Unified Search and Filter State
   const {
@@ -41,9 +41,9 @@ const Index = () => {
   // Initialize goal notifications
   useGoalNotifications();
 
-  // Scroll to upload section
+  // Open upload modal
   const handleUploadClick = () => {
-    uploadSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+    setShowUploadModal(true);
   };
 
   if (dataLoading) {
@@ -86,13 +86,17 @@ const Index = () => {
           <AIInsightsWidget exams={exams} />
           <HealthTrendsWidget histories={histories} exams={exams} />
           <HealthGoals />
-          <div ref={uploadSectionRef}>
-            <UploadSection onUploadComplete={refetch} />
-          </div>
           <UploadHistory onReprocess={refetch} />
           <AlertsSection exams={exams} />
         </div>
       </div>
+
+      {/* Upload Modal */}
+      <UploadModal
+        open={showUploadModal}
+        onOpenChange={setShowUploadModal}
+        onUploadComplete={refetch}
+      />
     </div>
   );
 };

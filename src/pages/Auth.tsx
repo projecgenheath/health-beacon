@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle, Building2 } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { z } from 'zod';
@@ -67,13 +67,13 @@ const Auth = () => {
     height: '',
     allergies: '',
     chronic_diseases: '',
+    // Laboratory
+    laboratory_name: '',
+    cnpj: '',
+    user_type: 'patient' as 'patient' | 'laboratory',
   });
 
   useEffect(() => {
-    if (user && !loading && view !== 'reset-password') {
-      navigate('/dashboard');
-    }
-
     // Check for recovery type in URL
     const params = new URLSearchParams(window.location.search);
     if (params.get('type') === 'recovery' || window.location.hash.includes('type=recovery')) {
@@ -109,8 +109,25 @@ const Auth = () => {
         toast.error('Erro ao fazer login. Tente novamente.');
       }
     } else {
-      toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      // Check user type for redirection
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+
+        toast.success('Login realizado com sucesso!');
+
+        if (profile?.user_type === 'laboratory') {
+          navigate('/laboratory/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (e) {
+        console.error('Error fetching profile:', e);
+        navigate('/dashboard');
+      }
     }
   };
 
@@ -132,8 +149,13 @@ const Auth = () => {
       return;
     }
 
-    if (!formData.full_name) {
+    if (formData.user_type === 'patient' && !formData.full_name) {
       toast.error('Nome completo é obrigatório');
+      return;
+    }
+
+    if (formData.user_type === 'laboratory' && !formData.laboratory_name) {
+      toast.error('Nome do laboratório é obrigatório');
       return;
     }
 
@@ -155,32 +177,46 @@ const Auth = () => {
     if (data?.user) {
       // 2. Create Profile with all fields
       try {
+        const profileData: any = {
+          user_id: data.user.id,
+          user_type: formData.user_type,
+          full_name: formData.user_type === 'patient' ? formData.full_name : null,
+          laboratory_name: formData.user_type === 'laboratory' ? formData.laboratory_name : null,
+          // Common fields
+          email: formData.email, // Store email in profile if needed, or just rely on auth
+          address_country: formData.address_country || null,
+          address_state: formData.address_state || null,
+          address_city: formData.address_city || null,
+          address_neighborhood: formData.address_neighborhood || null,
+          address_street: formData.address_street || null,
+          address_number: formData.address_number || null,
+          address_complement: formData.address_complement || null,
+          phone: formData.phone || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        if (formData.user_type === 'patient') {
+          profileData.birth_date = formData.birth_date || null;
+          profileData.cpf = formData.cpf || null;
+          profileData.sex = formData.sex || null;
+          profileData.gender = formData.gender || null;
+          profileData.ethnicity = formData.ethnicity || null;
+          profileData.marital_status = formData.marital_status || null;
+          profileData.emergency_phone = formData.emergency_phone || null;
+          profileData.weight = formData.weight ? parseFloat(formData.weight) : null;
+          profileData.height = formData.height ? parseFloat(formData.height) : null;
+          profileData.allergies = formData.allergies || null;
+          profileData.chronic_diseases = formData.chronic_diseases || null;
+        } else {
+          // Laboratory specific
+          profileData.cnpj = formData.cnpj || null;
+          // Map laboratory name to full_name as fallback/display name
+          profileData.full_name = formData.laboratory_name;
+        }
+
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert({
-            user_id: data.user.id,
-            full_name: formData.full_name,
-            birth_date: formData.birth_date || null,
-            cpf: formData.cpf || null,
-            sex: formData.sex || null,
-            gender: formData.gender || null,
-            ethnicity: formData.ethnicity || null,
-            marital_status: formData.marital_status || null,
-            address_country: formData.address_country || null,
-            address_state: formData.address_state || null,
-            address_city: formData.address_city || null,
-            address_neighborhood: formData.address_neighborhood || null,
-            address_street: formData.address_street || null,
-            address_number: formData.address_number || null,
-            address_complement: formData.address_complement || null,
-            phone: formData.phone || null,
-            emergency_phone: formData.emergency_phone || null,
-            weight: formData.weight ? parseFloat(formData.weight) : null,
-            height: formData.height ? parseFloat(formData.height) : null,
-            allergies: formData.allergies || null,
-            chronic_diseases: formData.chronic_diseases || null,
-            updated_at: new Date().toISOString(),
-          });
+          .upsert(profileData);
 
         if (profileError) {
           console.error('Profile update error:', profileError);
@@ -190,7 +226,11 @@ const Auth = () => {
           toast.success('Conta criada com sucesso!');
         }
 
-        navigate('/dashboard');
+        if (formData.user_type === 'laboratory') {
+          navigate('/laboratory/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
       } catch (err) {
         console.error('Unexpected error updating profile:', err);
         toast.success('Conta criada com sucesso!'); // Navigate anyway if auth worked
@@ -576,22 +616,70 @@ const Auth = () => {
 
                         {/* Account Info */}
                         <div className="space-y-3 sm:space-y-4">
+                          {/* User Type Selection */}
+                          <div className="flex p-1 bg-secondary/50 rounded-lg mb-4">
+                            <button
+                              type="button"
+                              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${formData.user_type === 'patient'
+                                ? 'bg-background shadow-sm text-primary'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              onClick={() => handleInputChange('user_type', 'patient')}
+                            >
+                              <User className="h-4 w-4" />
+                              Paciente
+                            </button>
+                            <button
+                              type="button"
+                              className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-md transition-all ${formData.user_type === 'laboratory'
+                                ? 'bg-background shadow-sm text-primary'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              onClick={() => handleInputChange('user_type', 'laboratory')}
+                            >
+                              <Building2 className="h-4 w-4" />
+                              Laboratório
+                            </button>
+                          </div>
+
                           <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                            <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            <h3 className="font-semibold text-base sm:text-lg">Dados da Conta</h3>
+                            {formData.user_type === 'laboratory' ? (
+                              <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            ) : (
+                              <User className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                            )}
+                            <h3 className="font-semibold text-base sm:text-lg">
+                              {formData.user_type === 'laboratory' ? 'Dados do Laboratório' : 'Dados da Conta'}
+                            </h3>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor="full_name">Nome Completo *</Label>
-                              <Input
-                                id="full_name"
-                                value={formData.full_name}
-                                onChange={(e) => handleInputChange('full_name', e.target.value)}
-                                placeholder="Seu nome completo"
-                                required
-                              />
+                              {formData.user_type === 'laboratory' ? (
+                                <>
+                                  <Label htmlFor="laboratory_name">Nome do Laboratório *</Label>
+                                  <Input
+                                    id="laboratory_name"
+                                    value={formData.laboratory_name}
+                                    onChange={(e) => handleInputChange('laboratory_name', e.target.value)}
+                                    placeholder="Nome Fantasia"
+                                    required
+                                  />
+                                </>
+                              ) : (
+                                <>
+                                  <Label htmlFor="full_name">Nome Completo *</Label>
+                                  <Input
+                                    id="full_name"
+                                    value={formData.full_name}
+                                    onChange={(e) => handleInputChange('full_name', e.target.value)}
+                                    placeholder="Seu nome completo"
+                                    required
+                                  />
+                                </>
+                              )}
                             </div>
+
                             <div className="space-y-2 md:col-span-2">
                               <Label htmlFor="email">Email *</Label>
                               <Input
@@ -603,6 +691,7 @@ const Auth = () => {
                                 required
                               />
                             </div>
+
                             <div className="space-y-2">
                               <Label htmlFor="password">Senha *</Label>
                               <Input
@@ -614,6 +703,7 @@ const Auth = () => {
                                 required
                               />
                             </div>
+
                             <div className="space-y-2">
                               <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
                               <Input
@@ -628,91 +718,115 @@ const Auth = () => {
                           </div>
                         </div>
 
-                        {/* Personal Info */}
-                        <div className="space-y-3 sm:space-y-4">
-                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            <h3 className="font-semibold text-base sm:text-lg">Informações Pessoais</h3>
-                          </div>
+                        {/* Personal Info - Only for Patients */}
+                        {formData.user_type === 'patient' && (
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              <h3 className="font-semibold text-base sm:text-lg">Informações Pessoais</h3>
+                            </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="birth_date">Data de Nascimento</Label>
-                              <Input
-                                id="birth_date"
-                                type="date"
-                                value={formData.birth_date}
-                                onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="cpf">CPF</Label>
-                              <Input
-                                id="cpf"
-                                value={formData.cpf}
-                                onChange={(e) => handleInputChange('cpf', e.target.value)}
-                                placeholder="000.000.000-00"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="sex">Sexo Biológico</Label>
-                              <Select onValueChange={(val) => handleInputChange('sex', val)} value={formData.sex}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="masculino">Masculino</SelectItem>
-                                  <SelectItem value="feminino">Feminino</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="gender">Identidade de Gênero</Label>
-                              <Select onValueChange={(val) => handleInputChange('gender', val)} value={formData.gender}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="cisgenero">Cisgênero</SelectItem>
-                                  <SelectItem value="transgenero">Transgênero</SelectItem>
-                                  <SelectItem value="nao_binario">Não-binário</SelectItem>
-                                  <SelectItem value="outro">Outro</SelectItem>
-                                  <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="ethnicity">Etnia/Cor</Label>
-                              <Select onValueChange={(val) => handleInputChange('ethnicity', val)} value={formData.ethnicity}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="branca">Branca</SelectItem>
-                                  <SelectItem value="preta">Preta</SelectItem>
-                                  <SelectItem value="parda">Parda</SelectItem>
-                                  <SelectItem value="amarela">Amarela</SelectItem>
-                                  <SelectItem value="indigena">Indígena</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="marital_status">Estado Civil</Label>
-                              <Select onValueChange={(val) => handleInputChange('marital_status', val)} value={formData.marital_status}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="solteiro">Solteiro(a)</SelectItem>
-                                  <SelectItem value="casado">Casado(a)</SelectItem>
-                                  <SelectItem value="separado">Separado(a)</SelectItem>
-                                  <SelectItem value="divorciado">Divorciado(a)</SelectItem>
-                                  <SelectItem value="viuvo">Viúvo(a)</SelectItem>
-                                </SelectContent>
-                              </Select>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="birth_date">Data de Nascimento</Label>
+                                <Input
+                                  id="birth_date"
+                                  type="date"
+                                  value={formData.birth_date}
+                                  onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="cpf">CPF</Label>
+                                <Input
+                                  id="cpf"
+                                  value={formData.cpf}
+                                  onChange={(e) => handleInputChange('cpf', e.target.value)}
+                                  placeholder="000.000.000-00"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="sex">Sexo Biológico</Label>
+                                <Select onValueChange={(val) => handleInputChange('sex', val)} value={formData.sex}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="masculino">Masculino</SelectItem>
+                                    <SelectItem value="feminino">Feminino</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="gender">Identidade de Gênero</Label>
+                                <Select onValueChange={(val) => handleInputChange('gender', val)} value={formData.gender}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="cisgenero">Cisgênero</SelectItem>
+                                    <SelectItem value="transgenero">Transgênero</SelectItem>
+                                    <SelectItem value="nao_binario">Não-binário</SelectItem>
+                                    <SelectItem value="outro">Outro</SelectItem>
+                                    <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="ethnicity">Etnia/Cor</Label>
+                                <Select onValueChange={(val) => handleInputChange('ethnicity', val)} value={formData.ethnicity}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="branca">Branca</SelectItem>
+                                    <SelectItem value="preta">Preta</SelectItem>
+                                    <SelectItem value="parda">Parda</SelectItem>
+                                    <SelectItem value="amarela">Amarela</SelectItem>
+                                    <SelectItem value="indigena">Indígena</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="marital_status">Estado Civil</Label>
+                                <Select onValueChange={(val) => handleInputChange('marital_status', val)} value={formData.marital_status}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Selecione" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                                    <SelectItem value="casado">Casado(a)</SelectItem>
+                                    <SelectItem value="separado">Separado(a)</SelectItem>
+                                    <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                                    <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
+
+                        {/* Laboratory Info - Only for Labs */}
+                        {formData.user_type === 'laboratory' && (
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                              <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              <h3 className="font-semibold text-base sm:text-lg">Dados da Empresa</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="cnpj">CNPJ</Label>
+                                <Input
+                                  id="cnpj"
+                                  value={formData.cnpj}
+                                  onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                                  placeholder="00.000.000/0000-00"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Address Info */}
                         <div className="space-y-3 sm:space-y-4">
@@ -811,55 +925,58 @@ const Auth = () => {
                           </div>
                         </div>
 
-                        {/* Medical Info */}
-                        <div className="space-y-3 sm:space-y-4">
-                          <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                            <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                            <h3 className="font-semibold text-base sm:text-lg">Saúde</h3>
-                          </div>
+                        {/* Medical Info - Only for Patients */}
+                        {formData.user_type === 'patient' && (
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                              <Heart className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                              <h3 className="font-semibold text-base sm:text-lg">Ficha Médica</h3>
+                            </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="weight">Peso (kg)</Label>
-                              <Input
-                                id="weight"
-                                type="number"
-                                step="0.1"
-                                value={formData.weight}
-                                onChange={(e) => handleInputChange('weight', e.target.value)}
-                                placeholder="Ex: 70.5"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="height">Altura (cm)</Label>
-                              <Input
-                                id="height"
-                                type="number"
-                                value={formData.height}
-                                onChange={(e) => handleInputChange('height', e.target.value)}
-                                placeholder="Ex: 175"
-                              />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor="allergies">Alergias</Label>
-                              <Textarea
-                                id="allergies"
-                                value={formData.allergies}
-                                onChange={(e) => handleInputChange('allergies', e.target.value)}
-                                placeholder="Liste suas alergias (opcional)"
-                              />
-                            </div>
-                            <div className="space-y-2 md:col-span-2">
-                              <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
-                              <Textarea
-                                id="chronic_diseases"
-                                value={formData.chronic_diseases}
-                                onChange={(e) => handleInputChange('chronic_diseases', e.target.value)}
-                                placeholder="Liste doenças crônicas ou tratamentos em andamento (opcional)"
-                              />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label htmlFor="weight">Peso (kg)</Label>
+                                <Input
+                                  id="weight"
+                                  type="number"
+                                  step="0.1"
+                                  value={formData.weight}
+                                  onChange={(e) => handleInputChange('weight', e.target.value)}
+                                  placeholder="Ex: 70.5"
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label htmlFor="height">Altura (m)</Label>
+                                <Input
+                                  id="height"
+                                  type="number"
+                                  step="0.01"
+                                  value={formData.height}
+                                  onChange={(e) => handleInputChange('height', e.target.value)}
+                                  placeholder="Ex: 1.75"
+                                />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="allergies">Alergias</Label>
+                                <Textarea
+                                  id="allergies"
+                                  value={formData.allergies}
+                                  onChange={(e) => handleInputChange('allergies', e.target.value)}
+                                  placeholder="Liste suas alergias (opcional)"
+                                />
+                              </div>
+                              <div className="space-y-2 md:col-span-2">
+                                <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
+                                <Textarea
+                                  id="chronic_diseases"
+                                  value={formData.chronic_diseases}
+                                  onChange={(e) => handleInputChange('chronic_diseases', e.target.value)}
+                                  placeholder="Liste doenças crônicas ou tratamentos em andamento (opcional)"
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         <Button
                           type="submit"

@@ -1,7 +1,8 @@
-import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard } from 'lucide-react';
+import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard, FileStack, DollarSign, Calendar as CalendarIcon, Building2 } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
 import { useTheme } from '@/components/theme-provider';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ import {
 
 export const Header = () => {
   const { user, signOut } = useAuth();
+  const { userType, profile, isLoading } = useUserType();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,12 +59,24 @@ export const Header = () => {
     }
   };
 
-  const navItems = [
+  // Patient navigation items
+  const patientNavItems = [
     { path: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
-    { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+    { path: '/patient/request-exam', label: 'Solicitar Exame', icon: FileStack },
+    { path: '/patient/quotations', label: 'Orçamentos', icon: DollarSign },
     { path: '/dashboard/compare', label: 'Comparar', icon: GitCompare },
-    { path: '/dashboard/reports', label: 'Relatórios', icon: FileText },
   ];
+
+  // Laboratory navigation items
+  const laboratoryNavItems = [
+    { path: '/laboratory/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/laboratory/requests', label: 'Pedidos', icon: FileText },
+    { path: '/laboratory/appointments', label: 'Agendamentos', icon: CalendarIcon },
+    { path: '/laboratory/profile', label: 'Perfil do Lab', icon: Building2 },
+  ];
+
+  // Select appropriate nav items based on user type
+  const navItems = userType === 'laboratory' ? laboratoryNavItems : patientNavItems;
 
   return (
     <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/50 safe-area-inset-top">

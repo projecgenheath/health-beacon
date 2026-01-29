@@ -28,6 +28,16 @@ const SharedExamView = lazy(() => import("./pages/SharedExamView"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Register = lazy(() => import("./pages/Register"));
 
+// Patient marketplace pages
+const RequestExam = lazy(() => import("./pages/patient/RequestExam"));
+const Quotations = lazy(() => import("./pages/patient/Quotations"));
+const ScheduleAppointment = lazy(() => import("./pages/patient/ScheduleAppointment"));
+
+// Laboratory pages
+const LaboratoryDashboard = lazy(() => import("./pages/laboratory/Dashboard"));
+const LaboratoryRequests = lazy(() => import("./pages/laboratory/Requests"));
+const LaboratoryAppointments = lazy(() => import("./pages/laboratory/Appointments"));
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -107,6 +117,58 @@ const App = () => {
 
                     {/* Public shared exam view */}
                     <Route path="/shared/:token" element={<SharedExamView />} />
+
+                    {/* Patient marketplace routes */}
+                    <Route
+                      path="/patient/request-exam"
+                      element={
+                        <ProtectedRoute>
+                          <RequestExam />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/patient/quotations"
+                      element={
+                        <ProtectedRoute>
+                          <Quotations />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/patient/schedule-appointment"
+                      element={
+                        <ProtectedRoute>
+                          <ScheduleAppointment />
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Laboratory routes */}
+                    <Route
+                      path="/laboratory/dashboard"
+                      element={
+                        <ProtectedRoute>
+                          <LaboratoryDashboard />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/laboratory/requests"
+                      element={
+                        <ProtectedRoute>
+                          <LaboratoryRequests />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/laboratory/appointments"
+                      element={
+                        <ProtectedRoute>
+                          <LaboratoryAppointments />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />

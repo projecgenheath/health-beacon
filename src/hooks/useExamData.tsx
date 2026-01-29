@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { ExamResult, ExamHistory, HealthSummary, ExamStatus } from '@/types/exam';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getReferenceRange } from '@/data/correlations';
 
 interface ExamResultRow {
   id: string;
@@ -54,6 +55,18 @@ export const useExamData = () => {
 
       if (error) throw error;
 
+      // Fetch user profile for age/sex context to get better reference ranges
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('sex, birth_date')
+        .eq('user_id', user.id)
+        .single();
+
+      const userSex = profile?.sex === 'M' || profile?.sex === 'F' ? profile.sex : 'M';
+      const userAge = profile?.birth_date
+        ? Math.floor((new Date().getTime() - new Date(profile.birth_date).getTime()) / (1000 * 60 * 60 * 24 * 365.25))
+        : 35; // Default age if not set
+
       if (!data || data.length === 0) {
         setExams([]);
         setHistories([]);
@@ -86,24 +99,38 @@ export const useExamData = () => {
       });
 
       // Convert to ExamResult format (latest exams only)
-      const latestExams: ExamResult[] = Array.from(latestExamsMap.values()).map((row) => ({
-        id: row.id,
-        examId: row.exam_id,
-        name: row.name,
-        value: Number(row.value),
-        textValue: row.text_value ?? null,
-        unit: row.unit,
-        referenceMin: row.reference_min ?? 0,
-        referenceMax: row.reference_max ?? 100,
-        status: row.status as ExamStatus,
-        date: row.exam_date,
-        category: row.category ?? 'Geral',
-        examType: (row.exam_type as 'laboratory' | 'imaging' | 'pathology') ?? 'laboratory',
-        description: row.description ?? null,
-        conclusion: row.conclusion ?? null,
-        fileUrl: row.exams?.file_url ?? null,
-        fileName: row.exams?.file_name ?? null,
-      }));
+      const latestExams: ExamResult[] = Array.from(latestExamsMap.values()).map((row) => {
+        // Try to get standard reference range if DB values are missing or default (0-100)
+        let refMin = row.reference_min;
+        let refMax = row.reference_max;
+
+        // Always try to get standard reference range based on age/sex to ensure consistency
+        // and fix potential extraction errors (e.g. Hemoglobin 13.5 vs Glycated 5.7)
+        const stdRange = getReferenceRange(row.name, userSex as 'M' | 'F', userAge);
+        if (stdRange) {
+          refMin = stdRange.min;
+          refMax = stdRange.max;
+        }
+
+        return {
+          id: row.id,
+          examId: row.exam_id,
+          name: row.name,
+          value: Number(row.value),
+          textValue: row.text_value ?? null,
+          unit: row.unit,
+          referenceMin: refMin ?? 0,
+          referenceMax: refMax ?? 100,
+          status: row.status as ExamStatus,
+          date: row.exam_date,
+          category: row.category ?? 'Geral',
+          examType: (row.exam_type as 'laboratory' | 'imaging' | 'pathology') ?? 'laboratory',
+          description: row.description ?? null,
+          conclusion: row.conclusion ?? null,
+          fileUrl: row.exams?.file_url ?? null,
+          fileName: row.exams?.file_name ?? null,
+        };
+      });
 
       // Build exam histories
       const examHistories: ExamHistory[] = [];
@@ -114,12 +141,25 @@ export const useExamData = () => {
             (a, b) => new Date(a.exam_date).getTime() - new Date(b.exam_date).getTime()
           );
 
-          const firstRow = sortedRows[0];
+          // IMPORTANT: Use the LATEST row (end of sortedRows) for the metadata (unit, ref range)
+          // instead of the oldest one (sortedRows[0])
+          const latestRowInHistory = sortedRows[sortedRows.length - 1];
+
+          let hRefMin = latestRowInHistory.reference_min;
+          let hRefMax = latestRowInHistory.reference_max;
+
+          const stdRange = getReferenceRange(examName, userSex as 'M' | 'F', userAge);
+
+          if (stdRange) {
+            hRefMin = stdRange.min;
+            hRefMax = stdRange.max;
+          }
+
           examHistories.push({
             examName,
-            unit: firstRow.unit,
-            referenceMin: firstRow.reference_min ?? 0,
-            referenceMax: firstRow.reference_max ?? 100,
+            unit: latestRowInHistory.unit,
+            referenceMin: hRefMin ?? 0,
+            referenceMax: hRefMax ?? 100,
             history: sortedRows.map((r) => ({
               date: r.exam_date,
               value: Number(r.value),

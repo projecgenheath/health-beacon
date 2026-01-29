@@ -11,9 +11,18 @@ import {
     Target,
     Pill,
     Settings,
+    FileCheck,
+    ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 
 interface QuickAction {
     id: string;
@@ -37,6 +46,23 @@ interface QuickActionsProps {
 export const QuickActions = ({ onUploadClick, className }: QuickActionsProps) => {
     const navigate = useNavigate();
     const [hoveredAction, setHoveredAction] = useState<string | null>(null);
+    const [showUploadDialog, setShowUploadDialog] = useState(false);
+
+    const handleUploadClick = () => {
+        setShowUploadDialog(true);
+    };
+
+    const handleExamResultUpload = () => {
+        setShowUploadDialog(false);
+        if (onUploadClick) {
+            onUploadClick();
+        }
+    };
+
+    const handleMedicalRequestUpload = () => {
+        setShowUploadDialog(false);
+        navigate('/patient/request-exam');
+    };
 
     const actions: QuickAction[] = [
         {
@@ -46,7 +72,7 @@ export const QuickActions = ({ onUploadClick, className }: QuickActionsProps) =>
             description: 'Envie um novo exame',
             color: 'text-primary',
             bgColor: 'bg-primary/10 hover:bg-primary/20',
-            action: onUploadClick || (() => { }),
+            action: handleUploadClick,
         },
         {
             id: 'compare',
@@ -78,40 +104,91 @@ export const QuickActions = ({ onUploadClick, className }: QuickActionsProps) =>
     ];
 
     return (
-        <Card className={cn('glass-card overflow-hidden', className)}>
-            <CardContent className="p-4">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {actions.map((action) => (
-                        <motion.button
-                            key={action.id}
-                            onClick={action.action}
-                            onMouseEnter={() => setHoveredAction(action.id)}
-                            onMouseLeave={() => setHoveredAction(null)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={cn(
-                                'flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200',
-                                'focus:outline-none focus:ring-2 focus:ring-primary/50',
-                                action.bgColor
-                            )}
-                        >
-                            <action.icon className={cn('h-6 w-6 mb-2', action.color)} />
-                            <span className="text-sm font-medium">{action.label}</span>
-                            <motion.span
-                                initial={{ opacity: 0, height: 0 }}
-                                animate={{
-                                    opacity: hoveredAction === action.id ? 1 : 0,
-                                    height: hoveredAction === action.id ? 'auto' : 0,
-                                }}
-                                className="text-xs text-muted-foreground text-center mt-1 line-clamp-2"
+        <>
+            <Card className={cn('glass-card overflow-hidden', className)}>
+                <CardContent className="p-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {actions.map((action) => (
+                            <motion.button
+                                key={action.id}
+                                onClick={action.action}
+                                onMouseEnter={() => setHoveredAction(action.id)}
+                                onMouseLeave={() => setHoveredAction(null)}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={cn(
+                                    'flex flex-col items-center justify-center p-4 rounded-xl transition-all duration-200',
+                                    'focus:outline-none focus:ring-2 focus:ring-primary/50',
+                                    action.bgColor
+                                )}
                             >
-                                {action.description}
-                            </motion.span>
-                        </motion.button>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+                                <action.icon className={cn('h-6 w-6 mb-2', action.color)} />
+                                <span className="text-sm font-medium">{action.label}</span>
+                                <motion.span
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{
+                                        opacity: hoveredAction === action.id ? 1 : 0,
+                                        height: hoveredAction === action.id ? 'auto' : 0,
+                                    }}
+                                    className="text-xs text-muted-foreground text-center mt-1 line-clamp-2"
+                                >
+                                    {action.description}
+                                </motion.span>
+                            </motion.button>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Upload Type Selection Dialog */}
+            <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Tipo de Upload</DialogTitle>
+                        <DialogDescription>
+                            Escolha o tipo de documento que deseja enviar
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Button
+                            onClick={handleExamResultUpload}
+                            variant="outline"
+                            className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                        >
+                            <div className="flex items-center gap-3 w-full">
+                                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <FileCheck className="h-6 w-6 text-primary" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <div className="font-semibold">Resultado de Exame</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Envie os resultados dos seus exames para análise
+                                    </div>
+                                </div>
+                            </div>
+                        </Button>
+
+                        <Button
+                            onClick={handleMedicalRequestUpload}
+                            variant="outline"
+                            className="h-auto flex-col items-start p-4 hover:bg-primary/5"
+                        >
+                            <div className="flex items-center gap-3 w-full">
+                                <div className="h-12 w-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                    <ClipboardList className="h-6 w-6 text-blue-500" />
+                                </div>
+                                <div className="flex-1 text-left">
+                                    <div className="font-semibold">Pedido Médico</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Envie um pedido médico para solicitar orçamentos
+                                    </div>
+                                </div>
+                            </div>
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
 
