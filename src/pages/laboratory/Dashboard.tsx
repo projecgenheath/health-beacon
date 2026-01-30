@@ -16,69 +16,70 @@ export default function LaboratoryDashboard() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        const loadDashboardData = async () => {
+            if (!user) return;
+
+            setIsLoading(true);
+            try {
+                // Get laboratory profile
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .eq('user_type', 'laboratory')
+                    .single();
+
+                if (profileError) throw profileError;
+                setLabProfile(profile);
+
+                // Get pending exam requests (visible to all laboratories)
+                const { data: requests, error: requestsError } = await supabase
+                    .from('exam_requests')
+                    .select('*')
+                    .eq('status', 'pending')
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (!requestsError) {
+                    setPendingRequests(requests || []);
+                }
+
+                // Get quotations sent by this laboratory
+                const { data: quotations, error: quotationsError } = await supabase
+                    .from('quotations')
+                    .select('*')
+                    .eq('laboratory_id', profile.id)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+
+                if (!quotationsError) {
+                    setSentQuotations(quotations || []);
+                }
+
+                // Get today's appointments
+                const today = new Date().toISOString().split('T')[0];
+                const { data: appointments, error: appointmentsError } = await supabase
+                    .from('collection_appointments')
+                    .select('*')
+                    .eq('laboratory_id', profile.id)
+                    .eq('scheduled_date', today)
+                    .order('scheduled_time', { ascending: true });
+
+                if (!appointmentsError) {
+                    setTodayAppointments(appointments || []);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
         if (user) {
             loadDashboardData();
         }
     }, [user]);
 
-    const loadDashboardData = async () => {
-        if (!user) return;
-
-        setIsLoading(true);
-        try {
-            // Get laboratory profile
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', user.id)
-                .eq('user_type', 'laboratory')
-                .single();
-
-            if (profileError) throw profileError;
-            setLabProfile(profile);
-
-            // Get pending exam requests (visible to all laboratories)
-            const { data: requests, error: requestsError } = await supabase
-                .from('exam_requests')
-                .select('*')
-                .eq('status', 'pending')
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            if (!requestsError) {
-                setPendingRequests(requests || []);
-            }
-
-            // Get quotations sent by this laboratory
-            const { data: quotations, error: quotationsError } = await supabase
-                .from('quotations')
-                .select('*')
-                .eq('laboratory_id', profile.id)
-                .order('created_at', { ascending: false })
-                .limit(10);
-
-            if (!quotationsError) {
-                setSentQuotations(quotations || []);
-            }
-
-            // Get today's appointments
-            const today = new Date().toISOString().split('T')[0];
-            const { data: appointments, error: appointmentsError } = await supabase
-                .from('collection_appointments')
-                .select('*')
-                .eq('laboratory_id', profile.id)
-                .eq('scheduled_date', today)
-                .order('scheduled_time', { ascending: true });
-
-            if (!appointmentsError) {
-                setTodayAppointments(appointments || []);
-            }
-        } catch (error) {
-            console.error('Error loading dashboard data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     if (isLoading) {
         return (

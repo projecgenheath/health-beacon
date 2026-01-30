@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,13 +22,7 @@ export default function LaboratoryAppointments() {
     const [appointments, setAppointments] = useState<AppointmentWithPatient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (user && profile) {
-            loadAppointments();
-        }
-    }, [user, profile]);
-
-    const loadAppointments = async () => {
+    const loadAppointments = useCallback(async () => {
         if (!user || !profile) return;
 
         setIsLoading(true);
@@ -49,7 +43,14 @@ export default function LaboratoryAppointments() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user, profile]);
+
+    useEffect(() => {
+        if (user && profile) {
+            loadAppointments();
+        }
+    }, [user, profile, loadAppointments]);
+
 
     const handleUpdateStatus = async (appointmentId: string, newStatus: string) => {
         try {

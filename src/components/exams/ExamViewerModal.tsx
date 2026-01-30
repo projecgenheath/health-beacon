@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { X, Download, ZoomIn, ZoomOut, Loader2, FileText, ExternalLink } from 'lucide-react';
@@ -26,17 +26,7 @@ export const ExamViewerModal = ({ isOpen, onClose, fileUrl, fileName }: ExamView
   const isPdf = fileName.toLowerCase().endsWith('.pdf');
   const isImage = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(fileName);
 
-  useEffect(() => {
-    if (isOpen && fileUrl) {
-      fetchSignedUrl();
-    } else {
-      setSignedUrl(null);
-      setError(null);
-      setZoom(100);
-    }
-  }, [isOpen, fileUrl]);
-
-  const fetchSignedUrl = async () => {
+  const fetchSignedUrl = useCallback(async () => {
     if (!fileUrl) return;
 
     setLoading(true);
@@ -55,7 +45,17 @@ export const ExamViewerModal = ({ isOpen, onClose, fileUrl, fileName }: ExamView
     } finally {
       setLoading(false);
     }
-  };
+  }, [fileUrl]);
+
+  useEffect(() => {
+    if (isOpen && fileUrl) {
+      fetchSignedUrl();
+    } else {
+      setSignedUrl(null);
+      setError(null);
+      setZoom(100);
+    }
+  }, [isOpen, fileUrl, fetchSignedUrl]);
 
   const handleDownload = async () => {
     if (!signedUrl) return;
@@ -177,7 +177,7 @@ export const ExamViewerModal = ({ isOpen, onClose, fileUrl, fileName }: ExamView
                     src={signedUrl}
                     alt={fileName}
                     className="rounded-lg shadow-lg transition-transform duration-300"
-                    style={{ 
+                    style={{
                       transform: `scale(${zoom / 100})`,
                       maxWidth: '100%',
                       height: 'auto'

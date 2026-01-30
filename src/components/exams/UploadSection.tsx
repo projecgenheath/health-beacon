@@ -31,6 +31,19 @@ const stepLabels: Record<ProcessingStep, string> = {
   saving: 'Salvando no banco de dados...',
 };
 
+const createPreview = (file: File): Promise<string | null> => {
+  return new Promise((resolve) => {
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    } else {
+      resolve(null);
+    }
+  });
+};
+
 export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -52,7 +65,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
     return () => {
       console.log('=== [UPLOAD_SECTION] Component unmounted ===');
     };
-  }, []);
+  }, [user]);
 
   // Recovery Effect: Check for pending file from IndexedDB after login
   useEffect(() => {
@@ -109,20 +122,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
     checkPendingFile();
   }, [user, toast]);
 
-  const createPreview = (file: File): Promise<string | null> => {
-    return new Promise((resolve) => {
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = () => resolve(null);
-        reader.readAsDataURL(file);
-      } else {
-        resolve(null);
-      }
-    });
-  };
-
-  const addFiles = async (newFiles: File[]) => {
+  const addFiles = useCallback(async (newFiles: File[]) => {
     console.log('[Upload] Adding files:', newFiles.length);
     const validFiles = newFiles.filter(
       (file) => file.type === 'application/pdf' || file.type.startsWith('image/')
@@ -159,7 +159,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
       title: 'Arquivo adicionado',
       description: `${validFiles.length} arquivo(s) pronto(s) para processamento`,
     });
-  };
+  }, [toast]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -176,7 +176,7 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
     setIsDragging(false);
     const droppedFiles = Array.from(e.dataTransfer.files);
     await addFiles(droppedFiles);
-  }, []);
+  }, [addFiles]);
 
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -345,7 +345,9 @@ export const UploadSection = ({ onUploadComplete }: UploadSectionProps) => {
           // Tentativa desesperada de ler o corpo do erro
           let errorBody = null;
           try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             if (functionError && typeof (functionError as any).context?.json === 'function') {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               errorBody = await (functionError as any).context.json();
               console.log('[Upload] Extracted error body from context:', errorBody);
             }

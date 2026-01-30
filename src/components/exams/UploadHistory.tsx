@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -49,13 +49,7 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
   const [viewingExam, setViewingExam] = useState<ExamUpload | null>(null);
   const [deletingExam, setDeletingExam] = useState<ExamUpload | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      fetchUploads();
-    }
-  }, [user]);
-
-  const fetchUploads = async () => {
+  const fetchUploads = useCallback(async () => {
     if (!user) return;
     console.log('Fetching uploads for user:', user.id);
 
@@ -75,7 +69,13 @@ export const UploadHistory = ({ onReprocess }: UploadHistoryProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchUploads();
+    }
+  }, [user, fetchUploads]);
 
   const handleReprocess = async (e: React.MouseEvent, exam: ExamUpload) => {
     e.preventDefault();

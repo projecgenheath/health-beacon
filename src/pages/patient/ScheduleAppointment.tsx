@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,14 +38,7 @@ export default function ScheduleAppointment() {
     const [homeAddress, setHomeAddress] = useState('');
     const [notes, setNotes] = useState('');
 
-    useEffect(() => {
-        if (quotationId && user) {
-            loadQuotation();
-            loadPatientAddress();
-        }
-    }, [quotationId, user]);
-
-    const loadQuotation = async () => {
+    const loadQuotation = useCallback(async () => {
         if (!quotationId) return;
 
         setIsLoading(true);
@@ -57,7 +50,7 @@ export default function ScheduleAppointment() {
                 .single();
 
             if (error) throw error;
-            setQuotation(data);
+            setQuotation(data as unknown as QuotationWithLaboratory);
         } catch (error) {
             console.error('Error loading quotation:', error);
             toast.error('Erro ao carregar orçamento');
@@ -65,9 +58,9 @@ export default function ScheduleAppointment() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [quotationId, navigate]);
 
-    const loadPatientAddress = async () => {
+    const loadPatientAddress = useCallback(async () => {
         if (!user) return;
 
         try {
@@ -97,7 +90,14 @@ export default function ScheduleAppointment() {
         } catch (error) {
             console.error('Error loading address:', error);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (quotationId && user) {
+            loadQuotation();
+            loadPatientAddress();
+        }
+    }, [quotationId, user, loadQuotation, loadPatientAddress]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -219,7 +219,7 @@ export default function ScheduleAppointment() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-1">
-                        {(quotation.items as Array<{ exam_name: string; price: number }>).map((item, idx) => (
+                        {(quotation.items as unknown as Array<{ exam_name: string; price: number }>).map((item, idx) => (
                             <div key={idx} className="flex justify-between text-sm">
                                 <span>{item.exam_name}</span>
                                 <span className="text-muted-foreground">R$ {item.price.toFixed(2)}</span>
@@ -240,7 +240,7 @@ export default function ScheduleAppointment() {
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <RadioGroup value={collectionType} onValueChange={(value: any) => setCollectionType(value)}>
+                        <RadioGroup value={collectionType} onValueChange={(value: 'in_lab' | 'home') => setCollectionType(value)}>
                             <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent cursor-pointer">
                                 <RadioGroupItem value="in_lab" id="in_lab" />
                                 <Label htmlFor="in_lab" className="flex-1 cursor-pointer">

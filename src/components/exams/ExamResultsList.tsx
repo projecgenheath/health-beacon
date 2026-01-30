@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { SearchBar } from './SearchBar';
+import { SearchBar } from '@/components/common/SearchBar';
 import { ImprovedExamChart } from './ImprovedExamChart';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';

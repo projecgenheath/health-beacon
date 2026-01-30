@@ -11,9 +11,9 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText, Loader2, CheckCircle2, MapPin, Star, DollarSign, Clock, FileUp, ListPlus, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { LocationPicker } from '@/components/LocationPicker';
-import { ExamTypeSelector } from '@/components/ExamTypeSelector';
-import type { QuotationWithLaboratory, ExamRequest } from '@/types/marketplace';
+import { LocationPicker } from '@/components/common/LocationPicker';
+import { ExamTypeSelector } from '@/components/exams/ExamTypeSelector';
+import type { QuotationWithLaboratory, ExamRequest, Profile, QuotationItem } from '@/types/marketplace';
 import { useNavigate } from 'react-router-dom';
 
 export default function RequestExamWithQuotes() {
@@ -33,9 +33,44 @@ export default function RequestExamWithQuotes() {
     const [examRequest, setExamRequest] = useState<ExamRequest | null>(null);
     const [quotations, setQuotations] = useState<QuotationWithLaboratory[]>([]);
 
-    const [patientProfile, setPatientProfile] = useState<any>(null);
+    const [patientProfile, setPatientProfile] = useState<Profile | null>(null);
 
     useEffect(() => {
+        const loadPatientProfile = async () => {
+            if (!user) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (error) throw error;
+                setPatientProfile(data);
+
+                // Pre-fill location if available
+                if (data.latitude && data.longitude) {
+                    const address = [
+                        data.address_street,
+                        data.address_number,
+                        data.address_city,
+                        data.address_state,
+                    ]
+                        .filter(Boolean)
+                        .join(', ');
+
+                    setLocation({
+                        lat: data.latitude,
+                        lng: data.longitude,
+                        address: address || 'Localização atual',
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        };
+
         if (user) {
             loadPatientProfile();
         }
@@ -65,8 +100,9 @@ export default function RequestExamWithQuotes() {
                         .single();
 
                     if (data) {
-                        setQuotations((prev) => [...prev, data as any]);
-                        toast.success(`Novo orçamento de ${(data as any).laboratory.laboratory_name}!`);
+                        const typedData = data as unknown as QuotationWithLaboratory;
+                        setQuotations((prev) => [...prev, typedData]);
+                        toast.success(`Novo orçamento de ${typedData.laboratory.laboratory_name}!`);
                     }
                 }
             )
@@ -75,42 +111,8 @@ export default function RequestExamWithQuotes() {
         return () => {
             subscription.unsubscribe();
         };
-    }, [examRequest]);
+    }, [examRequest?.id]);
 
-    const loadPatientProfile = async () => {
-        if (!user) return;
-
-        try {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('user_id', user.id)
-                .single();
-
-            if (error) throw error;
-            setPatientProfile(data);
-
-            // Pre-fill location if available
-            if (data.latitude && data.longitude) {
-                const address = [
-                    data.address_street,
-                    data.address_number,
-                    data.address_city,
-                    data.address_state,
-                ]
-                    .filter(Boolean)
-                    .join(', ');
-
-                setLocation({
-                    lat: data.latitude,
-                    lng: data.longitude,
-                    address: address || 'Localização atual',
-                });
-            }
-        } catch (error) {
-            console.error('Error loading profile:', error);
-        }
-    };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -164,9 +166,10 @@ export default function RequestExamWithQuotes() {
             // Create exam request
             await createExamRequest(exams, uploadData.path);
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error uploading and analyzing:', error);
-            toast.error(error.message || 'Erro ao processar pedido');
+            const errorMessage = error instanceof Error ? error.message : 'Erro ao processar pedido';
+            toast.error(errorMessage);
             setIsUploading(false);
             setIsAnalyzing(false);
         }
@@ -189,7 +192,7 @@ export default function RequestExamWithQuotes() {
                     patient_id: patientProfile.id,
                     exam_types: exams,
                     description,
-                    urgency_level: urgency,
+                    urgency_level: urgency as string,
                     status: 'pending',
                     document_url: documentUrl,
                 })
@@ -200,8 +203,9 @@ export default function RequestExamWithQuotes() {
 
             setExamRequest(requestData);
             toast.success('Pedido enviado! Aguardando orçamentos...');
-        } catch (error: any) {
-            toast.error(error.message || 'Erro ao criar pedido');
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro ao criar pedido';
+            toast.error(errorMessage);
             throw error;
         }
     };
@@ -485,7 +489,7 @@ export default function RequestExamWithQuotes() {
                                                 </CardHeader>
                                                 <CardContent className="space-y-3">
                                                     <div className="space-y-1">
-                                                        {(quotation.items as any[]).map((item, idx) => (
+                                                        {(quotation.items as unknown as QuotationItem[]).map((item, idx) => (
                                                             <div key={idx} className="flex justify-between text-sm">
                                                                 <span>{item.exam_name}</span>
                                                                 <span className="text-muted-foreground">

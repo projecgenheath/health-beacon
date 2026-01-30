@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import type { UserType, Profile } from '@/types/marketplace';
@@ -9,17 +9,7 @@ export function useUserType() {
     const [profile, setProfile] = useState<Profile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (user) {
-            loadUserType();
-        } else {
-            setUserType(null);
-            setProfile(null);
-            setIsLoading(false);
-        }
-    }, [user]);
-
-    const loadUserType = async () => {
+    const loadUserType = useCallback(async () => {
         if (!user) return;
 
         setIsLoading(true);
@@ -41,7 +31,17 @@ export function useUserType() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            loadUserType();
+        } else {
+            setUserType(null);
+            setProfile(null);
+            setIsLoading(false);
+        }
+    }, [user, loadUserType]);
 
     return { userType, profile, isLoading, refetch: loadUserType };
 }

@@ -1,17 +1,17 @@
 import { useRef, useState } from 'react';
 import { useExamData } from '@/hooks/useExamData';
 import { useGoalNotifications } from '@/hooks/useGoalNotifications';
-import { HealthSummaryCard } from '@/components/HealthSummaryCard';
-import { UploadHistory } from '@/components/UploadHistory';
-import { AlertsSection } from '@/components/AlertsSection';
-import { ExamResultsList } from '@/components/ExamResultsList';
+import { HealthSummaryCard } from '@/components/dashboard/HealthSummaryCard';
+import { UploadHistory } from '@/components/exams/UploadHistory';
+import { AlertsSection } from '@/components/dashboard/AlertsSection';
+import { ExamResultsList } from '@/components/exams/ExamResultsList';
 import { DashboardSkeleton } from '@/components/skeletons';
-import { ExportPDFButton } from '@/components/ExportPDFButton';
-import { HealthGoals } from '@/components/HealthGoals';
-import { AIInsightsWidget } from '@/components/AIInsightsWidget';
-import { HealthTrendsWidget } from '@/components/HealthTrendsWidget';
-import { QuickActions } from '@/components/QuickActions';
-import { UploadModal } from '@/components/UploadModal';
+import { ExportPDFButton } from '@/components/exams/ExportPDFButton';
+import { HealthGoals } from '@/components/dashboard/HealthGoals';
+import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
+import { HealthTrendsWidget } from '@/components/dashboard/HealthTrendsWidget';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { UploadModal } from '@/components/exams/UploadModal';
 import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
 
 

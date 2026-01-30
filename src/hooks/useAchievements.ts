@@ -102,7 +102,7 @@ export const useAchievements = () => {
         }
     }, [user]);
 
-    const unlockAchievement = async (key: string) => {
+    const unlockAchievement = useCallback(async (key: string) => {
         if (!user) return false;
 
         try {
@@ -123,7 +123,7 @@ export const useAchievements = () => {
             console.error('Error unlocking achievement:', error);
             return false;
         }
-    };
+    }, [user, fetchAchievements]);
 
     const checkAndUnlockAchievements = useCallback(async () => {
         if (!user) return;
@@ -159,7 +159,7 @@ export const useAchievements = () => {
         if (profile?.full_name && profile?.birth_date && profile?.sex && profile?.phone) {
             await unlockAchievement('complete_profile');
         }
-    }, [user]);
+    }, [user, unlockAchievement]);
 
     useEffect(() => {
         if (user) {

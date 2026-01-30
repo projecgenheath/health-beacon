@@ -3,11 +3,11 @@ import logoImg from '@/assets/logo.svg';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserType } from '@/hooks/useUserType';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/hooks/use-theme';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { NotificationBell } from '@/components/NotificationBell';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { NotificationBell } from '@/components/common/NotificationBell';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { clearPendingFile } from '@/lib/storage';
 import {
   DropdownMenu,

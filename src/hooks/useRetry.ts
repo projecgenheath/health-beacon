@@ -61,12 +61,12 @@ export function useRetry<T>(
     const sleep = (ms: number): Promise<void> =>
         new Promise(resolve => setTimeout(resolve, ms));
 
-    const calculateDelay = (attempt: number): number => {
+    const calculateDelay = useCallback((attempt: number): number => {
         const delay = initialDelay * Math.pow(backoffMultiplier, attempt);
         // Add jitter (±25%)
         const jitter = delay * 0.25 * (Math.random() * 2 - 1);
         return Math.min(delay + jitter, maxDelay);
-    };
+    }, [initialDelay, backoffMultiplier, maxDelay]);
 
     const execute = useCallback(async (): Promise<T | null> => {
         // Cancel any existing request
@@ -113,7 +113,7 @@ export function useRetry<T>(
         setIsLoading(false);
         setIsRetrying(false);
         return null;
-    }, [asyncFn, maxRetries, initialDelay, maxDelay, backoffMultiplier, retryCondition]);
+    }, [asyncFn, maxRetries, calculateDelay, retryCondition]);
 
     const reset = useCallback(() => {
         if (abortControllerRef.current) {

@@ -25,7 +25,7 @@ interface ExamsListProps {
     setSearchTerm: (term: string) => void;
     filters: { searchTerm: string };
   };
-  histories?: any;
+  histories?: unknown;
 }
 
 const ExamsListComponent = ({

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AnalyticsSkeleton } from '@/components/skeletons';
-import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
+import { UpdateBMIDialog } from '@/components/dashboard/UpdateBMIDialog';
 import {
   LineChart,
   Line,

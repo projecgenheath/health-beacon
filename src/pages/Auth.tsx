@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Mail, Lock, User, MapPin, Phone, Heart, FileText, AlertCircle, Building2 } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Email inválido');
@@ -177,7 +177,7 @@ const Auth = () => {
     if (data?.user) {
       // 2. Create Profile with all fields
       try {
-        const profileData: any = {
+        const profileData = {
           user_id: data.user.id,
           user_type: formData.user_type,
           full_name: formData.user_type === 'patient' ? formData.full_name : null,
@@ -193,30 +193,46 @@ const Auth = () => {
           address_complement: formData.address_complement || null,
           phone: formData.phone || null,
           updated_at: new Date().toISOString(),
+          // Patient specific fields set to null initially if not patient
+          birth_date: null,
+          cpf: null,
+          sex: null,
+          gender: null,
+          ethnicity: null,
+          marital_status: null,
+          emergency_phone: null,
+          weight: null,
+          height: null,
+          allergies: null,
+          chronic_diseases: null,
+          // Laboratory specific fields set to null initially if not laboratory
+          cnpj: null,
         };
 
+        const finalProfileData = { ...profileData };
+
         if (formData.user_type === 'patient') {
-          profileData.birth_date = formData.birth_date || null;
-          profileData.cpf = formData.cpf || null;
-          profileData.sex = formData.sex || null;
-          profileData.gender = formData.gender || null;
-          profileData.ethnicity = formData.ethnicity || null;
-          profileData.marital_status = formData.marital_status || null;
-          profileData.emergency_phone = formData.emergency_phone || null;
-          profileData.weight = formData.weight ? parseFloat(formData.weight) : null;
-          profileData.height = formData.height ? parseFloat(formData.height) : null;
-          profileData.allergies = formData.allergies || null;
-          profileData.chronic_diseases = formData.chronic_diseases || null;
+          finalProfileData.birth_date = formData.birth_date || null;
+          finalProfileData.cpf = formData.cpf || null;
+          finalProfileData.sex = formData.sex || null;
+          finalProfileData.gender = formData.gender || null;
+          finalProfileData.ethnicity = formData.ethnicity || null;
+          finalProfileData.marital_status = formData.marital_status || null;
+          finalProfileData.emergency_phone = formData.emergency_phone || null;
+          finalProfileData.weight = formData.weight ? parseFloat(formData.weight) : null;
+          finalProfileData.height = formData.height ? parseFloat(formData.height) : null;
+          finalProfileData.allergies = formData.allergies || null;
+          finalProfileData.chronic_diseases = formData.chronic_diseases || null;
         } else {
           // Laboratory specific
-          profileData.cnpj = formData.cnpj || null;
+          finalProfileData.cnpj = formData.cnpj || null;
           // Map laboratory name to full_name as fallback/display name
-          profileData.full_name = formData.laboratory_name;
+          finalProfileData.full_name = formData.laboratory_name;
         }
 
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert(profileData);
+          .upsert(finalProfileData);
 
         if (profileError) {
           console.error('Profile update error:', profileError);
@@ -263,8 +279,7 @@ const Auth = () => {
     setIsSubmitting(true);
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .rpc('lookup_email_by_cpf', { p_cpf: recoveryCpf });
 
       if (error) {

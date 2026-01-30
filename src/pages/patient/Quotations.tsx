@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, MapPin, Star, Clock, DollarSign, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
-import type { QuotationWithLaboratory, Profile } from '@/types/marketplace';
+import type { QuotationWithLaboratory, Profile, QuotationItem } from '@/types/marketplace';
 
 export default function Quotations() {
     const { user } = useAuth();
@@ -25,13 +25,7 @@ export default function Quotations() {
     const [minRating, setMinRating] = useState(0);
     const [sortBy, setSortBy] = useState<'price' | 'distance' | 'rating'>('price');
 
-    useEffect(() => {
-        if (user) {
-            loadQuotations();
-        }
-    }, [user]);
-
-    const loadQuotations = async () => {
+    const loadQuotations = useCallback(async () => {
         if (!user) return;
 
         setIsLoading(true);
@@ -75,9 +69,10 @@ export default function Quotations() {
             if (quotationsError) throw quotationsError;
 
             // Calculate distance for each quotation
-            const quotationsWithDistance = (quotationsData || []).map((q: any) => {
-                const lab = q.laboratory;
-                let distance_km = null;
+            const quotationsWithDistance = (quotationsData || []).map((q) => {
+                const typedQuotation = q as unknown as QuotationWithLaboratory;
+                const lab = typedQuotation.laboratory;
+                let distance_km: number | null = null;
 
                 if (
                     profile.latitude && profile.longitude &&
@@ -98,7 +93,7 @@ export default function Quotations() {
                 }
 
                 return {
-                    ...q,
+                    ...typedQuotation,
                     distance_km,
                 };
             });
@@ -110,7 +105,13 @@ export default function Quotations() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            loadQuotations();
+        }
+    }, [user, loadQuotations]);
 
     const filteredQuotations = quotations
         .filter(q => {
@@ -206,7 +207,7 @@ export default function Quotations() {
                         {/* Sort By */}
                         <div className="space-y-2">
                             <Label>Ordenar Por</Label>
-                            <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
+                            <Select value={sortBy} onValueChange={(v: 'price' | 'distance' | 'rating') => setSortBy(v)}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
@@ -266,7 +267,7 @@ export default function Quotations() {
                                     <div className="space-y-2">
                                         <Label className="text-sm">Exames Incluídos:</Label>
                                         <div className="space-y-1">
-                                            {(quotation.items as any[]).map((item, idx) => (
+                                            {(quotation.items as unknown as QuotationItem[]).map((item, idx) => (
                                                 <div key={idx} className="flex justify-between text-sm">
                                                     <span>{item.exam_name}</span>
                                                     <span className="text-muted-foreground">

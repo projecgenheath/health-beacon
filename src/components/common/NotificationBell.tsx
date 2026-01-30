@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,13 +27,7 @@ export const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -102,7 +96,13 @@ export const NotificationBell = () => {
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user, fetchNotifications]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -159,7 +159,7 @@ export const NotificationBell = () => {
                 >
                   <div className="flex items-start gap-3">
                     <div className={`mt-1 h-2 w-2 rounded-full shrink-0 ${notif.type === 'goal_deadline' ? 'bg-yellow-500' :
-                        notif.type === 'goal_achieved' ? 'bg-green-500' : 'bg-red-500'
+                      notif.type === 'goal_achieved' ? 'bg-green-500' : 'bg-red-500'
                       }`} />
                     <div className="space-y-1 flex-1">
                       <p className="text-sm font-medium leading-none">{notif.title}</p>

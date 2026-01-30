@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { RegisterWizard } from '@/components/RegisterWizard';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { RegisterWizard } from '@/components/auth/RegisterWizard';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';

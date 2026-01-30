@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,12 +66,7 @@ export const ExamRemindersWidget = () => {
     const [newFrequency, setNewFrequency] = useState('12');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (!user) return;
-        fetchReminders();
-    }, [user]);
-
-    const fetchReminders = async () => {
+    const fetchReminders = useCallback(async () => {
         if (!user) return;
 
         try {
@@ -108,7 +103,12 @@ export const ExamRemindersWidget = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user]);
+
+    useEffect(() => {
+        if (!user) return;
+        fetchReminders();
+    }, [user, fetchReminders]);
 
     const handleAddReminder = async () => {
         if (!user || !newExamType.trim()) return;
