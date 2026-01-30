@@ -1,4 +1,5 @@
-import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard, FileStack, DollarSign, Calendar as CalendarIcon, Building2 } from 'lucide-react';
+import React from 'react';
+import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard, FileStack, Upload, Activity } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/common/NotificationBell';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { clearPendingFile } from '@/lib/storage';
+import { motion } from 'framer-motion';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,20 +18,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { Menu, FileText } from 'lucide-react';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 
 export const Header = () => {
   const { user, signOut } = useAuth();
-  const { userType, profile, isLoading } = useUserType();
-  const { theme, setTheme } = useTheme();
+  const { userType } = useUserType();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -40,156 +32,139 @@ export const Header = () => {
     navigate('/');
   };
 
-  // Get page title based on current route
-  const getPageTitle = () => {
-    switch (location.pathname) {
-      case '/':
-      case '/dashboard':
-        return 'Visão Geral';
-      case '/dashboard/analytics':
-      case '/analytics':
-        return 'Análises';
-      case '/dashboard/compare':
-      case '/compare':
-        return 'Comparar';
-      case '/profile':
-        return 'Perfil';
-      default:
-        return '';
+  // Navigation items based on user type
+  const getNavigationItems = () => {
+    if (userType === 'patient') {
+      return [
+        { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+        { name: 'Solicitar Exame', path: '/patient/request-exam', icon: Upload },
+      ];
+    } else if (userType === 'laboratory') {
+      return [
+        { name: 'Dashboard', path: '/laboratory/dashboard', icon: LayoutDashboard },
+        { name: 'Pedidos', path: '/laboratory/requests', icon: FileStack },
+        { name: 'Agendamentos', path: '/laboratory/appointments', icon: Activity },
+      ];
     }
+    return [{ name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }];
   };
 
-  // Patient navigation items
-  const patientNavItems = [
-    { path: '/dashboard', label: 'Visão Geral', icon: LayoutDashboard },
-    { path: '/patient/request-exam', label: 'Solicitar Exame', icon: FileStack },
-    { path: '/patient/quotations', label: 'Orçamentos', icon: DollarSign },
-    { path: '/dashboard/compare', label: 'Comparar', icon: GitCompare },
-  ];
-
-  // Laboratory navigation items
-  const laboratoryNavItems = [
-    { path: '/laboratory/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/laboratory/requests', label: 'Pedidos', icon: FileText },
-    { path: '/laboratory/appointments', label: 'Agendamentos', icon: CalendarIcon },
-    { path: '/laboratory/profile', label: 'Perfil do Lab', icon: Building2 },
-  ];
-
-  // Select appropriate nav items based on user type
-  const navItems = userType === 'laboratory' ? laboratoryNavItems : patientNavItems;
+  const navItems = getNavigationItems();
 
   return (
-    <header className="sticky top-0 z-50 w-full backdrop-blur-xl bg-background/80 border-b border-border/50 safe-area-inset-top">
-      <div className="flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 max-w-[1920px] mx-auto">
-        {/* Mobile: Logo + Title | Desktop: Just Title */}
-        {/* Mobile menu trigger + Logo */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Mobile Hamburguer */}
-          <div className="md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] sm:w-[350px] p-0">
-                <SheetHeader className="p-6 text-left border-b border-border/50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <img src={logoImg} alt="BHB Logo" className="h-8 w-8 object-contain" />
-                    <SheetTitle className="text-xl font-bold">BHB (Biomedical Health Bank)</SheetTitle>
-                  </div>
-                </SheetHeader>
-                <div className="flex flex-col gap-1 p-4">
-                  {navItems.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <Button
-                        key={item.path}
-                        variant={isActive ? "secondary" : "ghost"}
-                        className={cn(
-                          "justify-start gap-4 h-12 text-base px-4",
-                          isActive && "bg-secondary font-semibold"
-                        )}
-                        onClick={() => {
-                          navigate(item.path);
-                        }}
-                      >
-                        <Icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-                        {item.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </SheetContent>
-            </Sheet>
+    <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background/60 border-b border-white/10 safe-area-inset-top">
+      <div className="px-4 md:px-6 lg:px-8 max-w-[1920px] mx-auto">
+        <div className="flex h-16 items-center justify-between gap-4">
+          {/* Logo & Desktop Nav */}
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate(userType === 'laboratory' ? '/laboratory/dashboard' : '/dashboard')}>
+              <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/20 shadow-glow-primary transition-spring hover:scale-110">
+                <img
+                  src={logoImg}
+                  alt="BHB Logo"
+                  className="h-6 w-6 object-contain"
+                />
+              </div>
+              <div className="hidden sm:block">
+                <h1 className="text-lg font-bold text-foreground leading-none">BHB Saúde</h1>
+                <p className="text-[10px] text-muted-foreground tracking-tighter uppercase font-semibold">Biomedical Health</p>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.path ||
+                  (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+
+                return (
+                  <button
+                    key={item.path}
+                    onClick={() => navigate(item.path)}
+                    className={cn(
+                      'flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 relative group',
+                      isActive
+                        ? 'text-primary font-bold'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/5'
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4 transition-transform duration-300 group-hover:scale-110", isActive && "text-primary")} />
+                    <span className="text-sm">{item.name}</span>
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-[-18px] left-0 right-0 h-[2px] bg-primary rounded-full shadow-[0_0_8px_rgba(20,184,166,0.6)]"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
 
-          {/* Logo - always visible now */}
-          <img src={logoImg} alt="BHB Logo" className="h-8 w-8 object-contain" />
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <ThemeToggle />
+            <NotificationBell />
 
-          {/* App Name */}
-          <h2 className="text-sm sm:text-base font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
-            BHB
-          </h2>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="p-2 sm:p-2.5 rounded-xl bg-white/5 border border-white/10 text-foreground hover:bg-white/10 transition-smooth btn-press min-w-[40px] min-h-[40px] flex items-center justify-center overflow-hidden"
+                  aria-label="Menu do usuário"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 glass-card animate-scale-in border-white/10 p-2">
+                <div className="px-2 py-2 mb-1">
+                  <p className="text-sm font-bold truncate text-foreground">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-tighter">Conta BHB</p>
+                </div>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={() => navigate('/profile')} className="rounded-lg py-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors">
+                  <Settings className="mr-2 h-4 w-4" />
+                  Meu Perfil
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem onClick={handleSignOut} className="rounded-lg py-2 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer transition-colors">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair da Conta
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+      </div>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-1 absolute left-1/2 -translate-x-1/2">
+      {/* Mobile Navigation row - visible only on small screens */}
+      <div className="md:hidden border-t border-white/5 overflow-x-auto scrollbar-hide bg-black/5">
+        <nav className="flex items-center gap-1 px-4 py-2 min-h-[52px]">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path ||
+              (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
 
             return (
-              <Button
+              <button
                 key={item.path}
-                variant={isActive ? "secondary" : "ghost"}
-                size="sm"
-                className={cn(
-                  "gap-2",
-                  isActive && "bg-secondary text-foreground"
-                )}
                 onClick={() => navigate(item.path)}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-200 whitespace-nowrap flex-shrink-0',
+                  isActive
+                    ? 'bg-primary text-primary-foreground shadow-glow-primary font-bold'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
               >
                 <Icon className="h-4 w-4" />
-                {item.label}
-              </Button>
+                <span className="text-sm">{item.name}</span>
+              </button>
             );
           })}
-        </div>
-
-        {/* Action buttons - with proper spacing for mobile */}
-        <div className="flex items-center gap-1 sm:gap-2">
-          <ThemeToggle />
-          <NotificationBell />
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="p-2 sm:p-2.5 rounded-xl bg-secondary/50 text-foreground hover:bg-secondary transition-smooth btn-press min-w-[40px] min-h-[40px] flex items-center justify-center"
-                aria-label="Menu do usuário"
-              >
-                <User className="h-5 w-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 animate-scale-in">
-              <div className="px-2 py-1.5">
-                <p className="text-sm font-medium truncate">{user?.email}</p>
-                <p className="text-xs text-muted-foreground">Minha conta</p>
-              </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
-                <Settings className="mr-2 h-4 w-4" />
-                Meu Perfil
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive cursor-pointer">
-                <LogOut className="mr-2 h-4 w-4" />
-                Sair
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        </nav>
       </div>
     </header>
   );
 };
+

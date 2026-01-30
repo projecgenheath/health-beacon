@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useExamData } from '@/hooks/useExamData';
 import { useGoalNotifications } from '@/hooks/useGoalNotifications';
 import { HealthSummaryCard } from '@/components/dashboard/HealthSummaryCard';
@@ -9,15 +10,24 @@ import { DashboardSkeleton } from '@/components/skeletons';
 import { ExportPDFButton } from '@/components/exams/ExportPDFButton';
 import { HealthGoals } from '@/components/dashboard/HealthGoals';
 import { AIInsightsWidget } from '@/components/dashboard/AIInsightsWidget';
-import { HealthTrendsWidget } from '@/components/dashboard/HealthTrendsWidget';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { UploadModal } from '@/components/exams/UploadModal';
 import { useSearchAndFilter } from '@/hooks/useSearchAndFilter';
+import { useUserType } from '@/hooks/useUserType';
+import { ExamRemindersWidget } from '@/components/exams/ExamRemindersWidget';
 
 
 const Index = () => {
   const { exams, histories, summary, loading: dataLoading, refetch } = useExamData();
+  const { profile } = useUserType();
+  const navigate = useNavigate();
   const [showUploadModal, setShowUploadModal] = useState(false);
+
+  useEffect(() => {
+    if (profile?.user_type === 'laboratory') {
+      navigate('/laboratory/dashboard');
+    }
+  }, [profile, navigate]);
 
   // Unified Search and Filter State
   const {
@@ -51,21 +61,31 @@ const Index = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Quick Actions Bar */}
-      <QuickActions onUploadClick={handleUploadClick} />
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      {/* Welcome & Quick Actions */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Olá, {profile?.full_name?.split(' ')[0] || 'Paciente'} 👋
+          </h1>
+          <p className="text-muted-foreground">
+            Bem-vindo ao seu Banco de Saúde. Aqui estão os seus dados mais recentes.
+          </p>
+        </div>
+        <QuickActions onUploadClick={handleUploadClick} />
+      </div>
 
-      {/* Mobile-first: Summary first on mobile, then grid reverses on desktop */}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-        {/* Mobile: Show summary first (order-first on mobile, order-2 on desktop) */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6 order-first lg:order-2">
+        {/* Main Content (Left on Desktop) */}
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
           <HealthSummaryCard
             summary={summary}
             onStatusClick={toggleStatus}
             activeStatuses={filters.statuses}
           />
 
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Seus Exames</h3>
             <ExportPDFButton exams={exams} summary={summary} />
           </div>
 
@@ -81,10 +101,10 @@ const Index = () => {
           />
         </div>
 
-        {/* Mobile: AI Insights and other widgets second (order-2 on mobile, order-first on desktop) */}
-        <div className="space-y-4 sm:space-y-6 lg:col-span-1 order-2 lg:order-first">
-          <AIInsightsWidget exams={exams} />
-          <HealthTrendsWidget histories={histories} exams={exams} />
+        {/* Widgets Sidebar (Right on Desktop) */}
+        <div className="space-y-4 sm:space-y-6 lg:col-span-1">
+          <AIInsightsWidget exams={exams} histories={histories} />
+          <ExamRemindersWidget />
           <HealthGoals />
           <UploadHistory onReprocess={refetch} />
           <AlertsSection exams={exams} />

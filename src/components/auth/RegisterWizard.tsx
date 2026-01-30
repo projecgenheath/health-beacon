@@ -24,6 +24,8 @@ const emailSchema = z.string().email('Email inválido');
 const passwordSchema = z.string().min(6, 'Senha deve ter pelo menos 6 caracteres');
 
 interface FormData {
+    // User type
+    user_type: 'patient' | 'laboratory';
     // Account
     email: string;
     password: string;
@@ -36,6 +38,9 @@ interface FormData {
     gender: string;
     ethnicity: string;
     marital_status: string;
+    // Laboratory
+    laboratory_name: string;
+    cnpj: string;
     // Address
     address_country: string;
     address_state: string;
@@ -78,6 +83,17 @@ const formatCPF = (value: string) => {
         .replace(/(-\d{2})\d+?$/, '$1');
 };
 
+// CNPJ mask
+const formatCNPJ = (value: string) => {
+    return value
+        .replace(/\D/g, '')
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d)/, '$1-$2')
+        .replace(/(-\d{2})\d+?$/, '$1');
+};
+
 // Phone mask
 const formatPhone = (value: string) => {
     return value
@@ -96,6 +112,7 @@ export const RegisterWizard = () => {
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
 
     const [formData, setFormData] = useState<FormData>({
+        user_type: 'patient',
         email: '',
         password: '',
         confirmPassword: '',
@@ -106,6 +123,8 @@ export const RegisterWizard = () => {
         gender: '',
         ethnicity: '',
         marital_status: '',
+        laboratory_name: '',
+        cnpj: '',
         address_country: 'Brasil',
         address_state: '',
         address_city: '',
@@ -132,6 +151,8 @@ export const RegisterWizard = () => {
         // Apply masks
         if (field === 'cpf') {
             value = formatCPF(value);
+        } else if (field === 'cnpj') {
+            value = formatCNPJ(value);
         } else if (field === 'phone' || field === 'emergency_phone') {
             value = formatPhone(value);
         }
@@ -149,7 +170,7 @@ export const RegisterWizard = () => {
 
         switch (step) {
             case 1:
-                if (!formData.full_name) newErrors.full_name = 'Nome é obrigatório';
+                // Common validations
                 if (!formData.email) {
                     newErrors.email = 'Email é obrigatório';
                 } else {
@@ -167,15 +188,28 @@ export const RegisterWizard = () => {
                 if (formData.password !== formData.confirmPassword) {
                     newErrors.confirmPassword = 'Senhas não coincidem';
                 }
-                // CPF is now required
-                if (!formData.cpf) {
-                    newErrors.cpf = 'CPF é obrigatório';
-                } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
-                    newErrors.cpf = 'CPF deve ter 11 dígitos';
+
+                // Patient-specific validations
+                if (formData.user_type === 'patient') {
+                    if (!formData.full_name) newErrors.full_name = 'Nome é obrigatório';
+                    if (!formData.cpf) {
+                        newErrors.cpf = 'CPF é obrigatório';
+                    } else if (formData.cpf.replace(/\D/g, '').length !== 11) {
+                        newErrors.cpf = 'CPF deve ter 11 dígitos';
+                    }
+                    if (!formData.birth_date) {
+                        newErrors.birth_date = 'Data de nascimento é obrigatória';
+                    }
                 }
-                // Birth date is now required
-                if (!formData.birth_date) {
-                    newErrors.birth_date = 'Data de nascimento é obrigatória';
+
+                // Laboratory-specific validations
+                if (formData.user_type === 'laboratory') {
+                    if (!formData.laboratory_name) newErrors.laboratory_name = 'Nome do laboratório é obrigatório';
+                    if (!formData.cnpj) {
+                        newErrors.cnpj = 'CNPJ é obrigatório';
+                    } else if (formData.cnpj.replace(/\D/g, '').length !== 14) {
+                        newErrors.cnpj = 'CNPJ deve ter 14 dígitos';
+                    }
                 }
                 break;
             case 6:
@@ -230,28 +264,32 @@ export const RegisterWizard = () => {
 
         setIsSubmitting(true);
 
-        // Check if CPF is available before creating account
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data: cpfCheck, error: cpfError } = await (supabase as any)
-                .rpc('check_cpf_available', { p_cpf: formData.cpf });
+        // Check if CPF is available before creating account (patient only)
+        if (formData.user_type === 'patient' && formData.cpf) {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const { data: cpfCheck, error: cpfError } = await (supabase as any)
+                    .rpc('check_cpf_available', { p_cpf: formData.cpf });
 
-            if (cpfError) {
-                console.error('CPF check error:', cpfError);
-            } else if (cpfCheck && !cpfCheck.available) {
-                toast.error(cpfCheck.message || 'Este CPF já está cadastrado no sistema');
-                setIsSubmitting(false);
-                // Go back to step 1 to fix the CPF
-                setCurrentStep(1);
-                setErrors(prev => ({ ...prev, cpf: cpfCheck.message || 'CPF já cadastrado' }));
-                return;
+                if (cpfError) {
+                    console.error('CPF check error:', cpfError);
+                } else if (cpfCheck && !cpfCheck.available) {
+                    toast.error(cpfCheck.message || 'Este CPF já está cadastrado no sistema');
+                    setIsSubmitting(false);
+                    // Go back to step 1 to fix the CPF
+                    setCurrentStep(1);
+                    setErrors(prev => ({ ...prev, cpf: cpfCheck.message || 'CPF já cadastrado' }));
+                    return;
+                }
+            } catch (err) {
+                console.error('Error checking CPF:', err);
+                // Continue with registration if check fails (it will be caught by DB constraint)
             }
-        } catch (err) {
-            console.error('Error checking CPF:', err);
-            // Continue with registration if check fails (it will be caught by DB constraint)
         }
 
-        const { data, error: signUpError } = await signUp(formData.email, formData.password, formData.full_name);
+        // Use laboratory_name for laboratories, full_name for patients
+        const displayName = formData.user_type === 'laboratory' ? formData.laboratory_name : formData.full_name;
+        const { data, error: signUpError } = await signUp(formData.email, formData.password, displayName);
 
         if (signUpError) {
             setIsSubmitting(false);
@@ -267,15 +305,21 @@ export const RegisterWizard = () => {
             try {
                 const { error: profileError } = await supabase
                     .from('profiles')
-                    .upsert({
+                    .update({
                         user_id: data.user.id,
-                        full_name: formData.full_name,
-                        birth_date: formData.birth_date || null,
-                        cpf: formData.cpf.replace(/\D/g, '') || null,
+                        user_type: formData.user_type,
+                        // Common fields
+                        full_name: formData.user_type === 'laboratory' ? formData.laboratory_name : formData.full_name,
+                        birth_date: formData.user_type === 'patient' ? (formData.birth_date || null) : null,
+                        cpf: formData.user_type === 'patient' ? (formData.cpf.replace(/\D/g, '') || null) : null,
                         sex: formData.sex || null,
                         gender: formData.gender || null,
                         ethnicity: formData.ethnicity || null,
                         marital_status: formData.marital_status || null,
+                        // Laboratory-specific fields
+                        laboratory_name: formData.user_type === 'laboratory' ? formData.laboratory_name : null,
+                        cnpj: formData.user_type === 'laboratory' ? (formData.cnpj.replace(/\D/g, '') || null) : null,
+                        // Address
                         address_country: formData.address_country || null,
                         address_state: formData.address_state || null,
                         address_city: formData.address_city || null,
@@ -283,27 +327,40 @@ export const RegisterWizard = () => {
                         address_street: formData.address_street || null,
                         address_number: formData.address_number || null,
                         address_complement: formData.address_complement || null,
+                        // Contact
                         phone: formData.phone.replace(/\D/g, '') || null,
                         emergency_phone: formData.emergency_phone.replace(/\D/g, '') || null,
-                        weight: formData.weight ? parseFloat(formData.weight) : null,
-                        height: formData.height ? parseFloat(formData.height) : null,
-                        allergies: formData.allergies || null,
-                        chronic_diseases: formData.chronic_diseases || null,
+                        // Medical (patient only)
+                        weight: formData.user_type === 'patient' ? (formData.weight ? parseFloat(formData.weight) : null) : null,
+                        height: formData.user_type === 'patient' ? (formData.height ? parseFloat(formData.height) : null) : null,
+                        allergies: formData.user_type === 'patient' ? (formData.allergies || null) : null,
+                        chronic_diseases: formData.user_type === 'patient' ? (formData.chronic_diseases || null) : null,
                         updated_at: new Date().toISOString(),
-                    });
+                    })
+                    .eq('user_id', data.user.id);
 
                 if (profileError) {
                     console.error('Profile update error:', profileError);
-                    toast.warning('Conta criada, mas houve erro ao salvar dados do perfil.');
+                    toast.warning(`Conta criada, mas houve erro ao salvar dados do perfil: ${profileError.message}`);
                 } else {
                     toast.success('Conta criada com sucesso! 🎉');
                 }
 
-                navigate('/dashboard');
+                // Redirect based on user type
+                if (formData.user_type === 'laboratory') {
+                    navigate('/laboratory/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             } catch (err) {
                 console.error('Unexpected error updating profile:', err);
                 toast.success('Conta criada com sucesso!');
-                navigate('/dashboard');
+                // Redirect based on user type even on error
+                if (formData.user_type === 'laboratory') {
+                    navigate('/laboratory/dashboard');
+                } else {
+                    navigate('/dashboard');
+                }
             }
         }
 
@@ -404,26 +461,88 @@ export const RegisterWizard = () => {
                                 </div>
 
                                 <div className="space-y-4">
+                                    {/* User Type Selection */}
                                     <div className="space-y-2">
-                                        <Label htmlFor="full_name" className="flex items-center gap-2">
+                                        <Label className="flex items-center gap-2">
                                             <User className="h-4 w-4 text-primary" />
-                                            Nome Completo *
+                                            Tipo de Cadastro *
                                         </Label>
-                                        <Input
-                                            id="full_name"
-                                            value={formData.full_name}
-                                            onChange={(e) => handleInputChange('full_name', e.target.value)}
-                                            placeholder="João da Silva"
-                                            className={cn(
-                                                "transition-all",
-                                                errors.full_name && "border-destructive focus:ring-destructive",
-                                                formData.full_name && !errors.full_name && "border-status-healthy"
-                                            )}
-                                        />
-                                        {errors.full_name && (
-                                            <p className="text-xs text-destructive animate-fade-in">{errors.full_name}</p>
-                                        )}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button
+                                                type="button"
+                                                onClick={() => handleInputChange('user_type', 'patient')}
+                                                className={cn(
+                                                    "p-4 border-2 rounded-xl transition-all hover:scale-105",
+                                                    formData.user_type === 'patient'
+                                                        ? "border-primary bg-primary/10 shadow-glow-primary"
+                                                        : "border-border hover:border-primary/50"
+                                                )}
+                                            >
+                                                <Heart className="h-6 w-6 mx-auto mb-2 text-primary" />
+                                                <p className="font-medium">Paciente</p>
+                                                <p className="text-xs text-muted-foreground mt-1">Pessoa física</p>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleInputChange('user_type', 'laboratory')}
+                                                className={cn(
+                                                    "p-4 border-2 rounded-xl transition-all hover:scale-105",
+                                                    formData.user_type === 'laboratory'
+                                                        ? "border-primary bg-primary/10 shadow-glow-primary"
+                                                        : "border-border hover:border-primary/50"
+                                                )}
+                                            >
+                                                <FileText className="h-6 w-6 mx-auto mb-2 text-primary" />
+                                                <p className="font-medium">Laboratório</p>
+                                                <p className="text-xs text-muted-foreground mt-1">Pessoa jurídica</p>
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* Name field - conditional based on user type */}
+                                    {formData.user_type === 'patient' ? (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="full_name" className="flex items-center gap-2">
+                                                <User className="h-4 w-4 text-primary" />
+                                                Nome Completo *
+                                            </Label>
+                                            <Input
+                                                id="full_name"
+                                                value={formData.full_name}
+                                                onChange={(e) => handleInputChange('full_name', e.target.value)}
+                                                placeholder="João da Silva"
+                                                className={cn(
+                                                    "transition-all",
+                                                    errors.full_name && "border-destructive focus:ring-destructive",
+                                                    formData.full_name && !errors.full_name && "border-status-healthy"
+                                                )}
+                                            />
+                                            {errors.full_name && (
+                                                <p className="text-xs text-destructive animate-fade-in">{errors.full_name}</p>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <Label htmlFor="laboratory_name" className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-primary" />
+                                                Nome do Laboratório *
+                                            </Label>
+                                            <Input
+                                                id="laboratory_name"
+                                                value={formData.laboratory_name}
+                                                onChange={(e) => handleInputChange('laboratory_name', e.target.value)}
+                                                placeholder="Laboratório Saúde+"
+                                                className={cn(
+                                                    "transition-all",
+                                                    errors.laboratory_name && "border-destructive focus:ring-destructive",
+                                                    formData.laboratory_name && !errors.laboratory_name && "border-status-healthy"
+                                                )}
+                                            />
+                                            {errors.laboratory_name && (
+                                                <p className="text-xs text-destructive animate-fade-in">{errors.laboratory_name}</p>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="space-y-2">
                                         <Label htmlFor="email" className="flex items-center gap-2">
@@ -496,54 +615,81 @@ export const RegisterWizard = () => {
                                         </div>
                                     </div>
 
-                                    {/* CPF and Birth Date - Required fields */}
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* CPF/CNPJ and Birth Date - Conditional fields */}
+                                    {formData.user_type === 'patient' ? (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="cpf" className="flex items-center gap-2">
+                                                    <FileText className="h-4 w-4 text-primary" />
+                                                    CPF *
+                                                </Label>
+                                                <Input
+                                                    id="cpf"
+                                                    value={formData.cpf}
+                                                    onChange={(e) => handleInputChange('cpf', e.target.value)}
+                                                    placeholder="000.000.000-00"
+                                                    maxLength={14}
+                                                    className={cn(
+                                                        "transition-all",
+                                                        errors.cpf && "border-destructive focus:ring-destructive",
+                                                        formData.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && "border-status-healthy"
+                                                    )}
+                                                />
+                                                {errors.cpf && (
+                                                    <p className="text-xs text-destructive animate-fade-in">{errors.cpf}</p>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    O CPF é utilizado para identificação única e recuperação de conta
+                                                </p>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Label htmlFor="birth_date" className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-primary" />
+                                                    Data de Nascimento *
+                                                </Label>
+                                                <Input
+                                                    id="birth_date"
+                                                    type="date"
+                                                    value={formData.birth_date}
+                                                    onChange={(e) => handleInputChange('birth_date', e.target.value)}
+                                                    className={cn(
+                                                        "transition-all",
+                                                        errors.birth_date && "border-destructive focus:ring-destructive",
+                                                        formData.birth_date && !errors.birth_date && "border-status-healthy"
+                                                    )}
+                                                />
+                                                {errors.birth_date && (
+                                                    <p className="text-xs text-destructive animate-fade-in">{errors.birth_date}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
                                         <div className="space-y-2">
-                                            <Label htmlFor="cpf" className="flex items-center gap-2">
+                                            <Label htmlFor="cnpj" className="flex items-center gap-2">
                                                 <FileText className="h-4 w-4 text-primary" />
-                                                CPF *
+                                                CNPJ *
                                             </Label>
                                             <Input
-                                                id="cpf"
-                                                value={formData.cpf}
-                                                onChange={(e) => handleInputChange('cpf', e.target.value)}
-                                                placeholder="000.000.000-00"
-                                                maxLength={14}
+                                                id="cnpj"
+                                                value={formData.cnpj}
+                                                onChange={(e) => handleInputChange('cnpj', e.target.value)}
+                                                placeholder="00.000.000/0000-00"
+                                                maxLength={18}
                                                 className={cn(
                                                     "transition-all",
-                                                    errors.cpf && "border-destructive focus:ring-destructive",
-                                                    formData.cpf.replace(/\D/g, '').length === 11 && !errors.cpf && "border-status-healthy"
+                                                    errors.cnpj && "border-destructive focus:ring-destructive",
+                                                    formData.cnpj.replace(/\D/g, '').length === 14 && !errors.cnpj && "border-status-healthy"
                                                 )}
                                             />
-                                            {errors.cpf && (
-                                                <p className="text-xs text-destructive animate-fade-in">{errors.cpf}</p>
+                                            {errors.cnpj && (
+                                                <p className="text-xs text-destructive animate-fade-in">{errors.cnpj}</p>
                                             )}
                                             <p className="text-xs text-muted-foreground">
-                                                O CPF é utilizado para identificação única e recuperação de conta
+                                                O CNPJ é utilizado para identificação única do laboratório
                                             </p>
                                         </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="birth_date" className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4 text-primary" />
-                                                Data de Nascimento *
-                                            </Label>
-                                            <Input
-                                                id="birth_date"
-                                                type="date"
-                                                value={formData.birth_date}
-                                                onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                                                className={cn(
-                                                    "transition-all",
-                                                    errors.birth_date && "border-destructive focus:ring-destructive",
-                                                    formData.birth_date && !errors.birth_date && "border-status-healthy"
-                                                )}
-                                            />
-                                            {errors.birth_date && (
-                                                <p className="text-xs text-destructive animate-fade-in">{errors.birth_date}</p>
-                                            )}
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -569,8 +715,8 @@ export const RegisterWizard = () => {
                                                 <SelectValue placeholder="Selecione" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="masculino">Masculino</SelectItem>
-                                                <SelectItem value="feminino">Feminino</SelectItem>
+                                                <SelectItem value="M">Masculino</SelectItem>
+                                                <SelectItem value="F">Feminino</SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </div>

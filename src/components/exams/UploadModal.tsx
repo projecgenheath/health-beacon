@@ -5,7 +5,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { UploadSection } from '@/components/UploadSection';
+import { UploadSection } from '@/components/exams/UploadSection';
 
 interface UploadModalProps {
     open: boolean;

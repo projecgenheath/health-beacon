@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
 import { useSyncGoalsWithExams } from '@/hooks/useSyncGoalsWithExams';
-import { UpdateBMIDialog } from '@/components/UpdateBMIDialog';
+import { UpdateBMIDialog } from '@/components/dashboard/UpdateBMIDialog';
 import { getPendingFile, clearPendingFile } from '@/lib/storage';
 
 interface UploadSectionProps {

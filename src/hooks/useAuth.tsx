@@ -31,7 +31,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data }) => {
+      const session = data?.session ?? null;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/auth?type=recovery`;
+    const redirectUrl = `${window.location.origin}/dashboard`;
 
     const { data, error } = await supabase.auth.signUp({
       email,

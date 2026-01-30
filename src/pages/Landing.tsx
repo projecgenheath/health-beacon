@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserType } from '@/hooks/useUserType';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,11 +31,12 @@ import {
     Mail,
 } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { storePendingFile, getPendingFile } from '@/lib/storage';
 
 const Landing = () => {
     const { user, signIn } = useAuth();
+    const { userType, isLoading: isLoadingUserType } = useUserType();
     const navigate = useNavigate();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,11 +50,15 @@ const Landing = () => {
 
     // Redirect if already logged in - must be in useEffect to avoid setState during render
     useEffect(() => {
-        if (user) {
-            console.log('[LANDING] User already logged in, redirecting to dashboard...');
-            navigate('/dashboard');
+        if (user && !isLoadingUserType && userType) {
+            console.log('[LANDING] User already logged in, redirecting based on type...');
+            if (userType === 'laboratory') {
+                navigate('/laboratory/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         }
-    }, [user, navigate]);
+    }, [user, userType, isLoadingUserType, navigate]);
 
     const handleDragEnter = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -146,9 +153,36 @@ const Landing = () => {
         }
 
         console.log('[LANDING] ✓ Login successful');
-        console.log('[LANDING] Navigating to /dashboard...');
-        toast.success('Login realizado com sucesso!');
-        navigate('/dashboard');
+
+        // Fetch user type to determine redirect
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('user_type')
+                    .eq('user_id', user.id)
+                    .single();
+
+                console.log('[LANDING] User type:', profile?.user_type);
+
+                if (profile?.user_type === 'laboratory') {
+                    console.log('[LANDING] Navigating to /laboratory/dashboard...');
+                    toast.success('Login realizado com sucesso!');
+                    navigate('/laboratory/dashboard');
+                } else {
+                    console.log('[LANDING] Navigating to /dashboard...');
+                    toast.success('Login realizado com sucesso!');
+                    navigate('/dashboard');
+                }
+            }
+        } catch (err) {
+            console.error('[LANDING] Error fetching user type:', err);
+            // Default to patient dashboard on error
+            toast.success('Login realizado com sucesso!');
+            navigate('/dashboard');
+        }
+
         console.log('=== [LANDING] Navigation triggered ===');
     };
 

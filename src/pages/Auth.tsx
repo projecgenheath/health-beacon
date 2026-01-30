@@ -103,10 +103,11 @@ const Auth = () => {
     setIsSubmitting(false);
 
     if (error) {
+      console.error('Login error:', error);
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Email ou senha incorretos');
       } else {
-        toast.error('Erro ao fazer login. Tente novamente.');
+        toast.error(`Erro ao fazer login: ${error.message}`);
       }
     } else {
       // Check user type for redirection
@@ -206,7 +207,7 @@ const Auth = () => {
           allergies: null,
           chronic_diseases: null,
           // Laboratory specific fields set to null initially if not laboratory
-          cnpj: null,
+          cnpj: formData.user_type === 'laboratory' ? (formData.cnpj.replace(/\D/g, '') || null) : null,
         };
 
         const finalProfileData = { ...profileData };
@@ -219,25 +220,26 @@ const Auth = () => {
           finalProfileData.ethnicity = formData.ethnicity || null;
           finalProfileData.marital_status = formData.marital_status || null;
           finalProfileData.emergency_phone = formData.emergency_phone || null;
-          finalProfileData.weight = formData.weight ? parseFloat(formData.weight) : null;
-          finalProfileData.height = formData.height ? parseFloat(formData.height) : null;
+          finalProfileData.weight = formData.weight ? parseFloat(formData.weight.replace(',', '.')) : null;
+          finalProfileData.height = formData.height ? parseFloat(formData.height.replace(',', '.')) : null;
           finalProfileData.allergies = formData.allergies || null;
           finalProfileData.chronic_diseases = formData.chronic_diseases || null;
         } else {
-          // Laboratory specific
-          finalProfileData.cnpj = formData.cnpj || null;
-          // Map laboratory name to full_name as fallback/display name
+          finalProfileData.cnpj = formData.cnpj.replace(/\D/g, '') || null;
           finalProfileData.full_name = formData.laboratory_name;
+          finalProfileData.laboratory_name = formData.laboratory_name;
         }
 
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert(finalProfileData);
+
+        const { error: profileError } = await (supabase
+          .from('profiles') as any)
+          .update(finalProfileData)
+          .eq('user_id', data.user.id);
 
         if (profileError) {
           console.error('Profile update error:', profileError);
           // Don't block registration success, but warn user
-          toast.warning('Conta criada, mas houve erro ao salvar dados do perfil.');
+          toast.warning(`Conta criada, mas houve erro ao salvar dados do perfil: ${profileError.message}`);
         } else {
           toast.success('Conta criada com sucesso!');
         }
@@ -368,7 +370,19 @@ const Auth = () => {
       toast.error('Erro ao atualizar senha: ' + error.message);
     } else {
       toast.success('Senha atualizada com sucesso!');
-      navigate('/dashboard');
+
+      // Fetch profile to redirect to correct dashboard
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (profile?.user_type === 'laboratory') {
+        navigate('/laboratory/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     }
   };
 
@@ -767,8 +781,8 @@ const Auth = () => {
                                     <SelectValue placeholder="Selecione" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="masculino">Masculino</SelectItem>
-                                    <SelectItem value="feminino">Feminino</SelectItem>
+                                    <SelectItem value="M">Masculino</SelectItem>
+                                    <SelectItem value="F">Feminino</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>

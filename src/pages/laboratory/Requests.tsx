@@ -10,11 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Search, FileText, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, Search, FileText, Clock, AlertCircle, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ExamRequest, Profile, QuotationItem } from '@/types/marketplace';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { DiagnosticosBrasilService } from '@/services/diagnosticos-brasil/service';
+import type { DBPedido } from '@/services/diagnosticos-brasil/types';
 
 interface ExamRequestWithPatient extends ExamRequest {
     patient: Profile;
@@ -30,6 +32,10 @@ export default function LaboratoryRequests() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedRequest, setSelectedRequest] = useState<ExamRequestWithPatient | null>(null);
     const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
+
+    // DB Integration State
+    const [isDBDialogOpen, setIsDBDialogOpen] = useState(false);
+    const [dbXmlPreview, setDbXmlPreview] = useState('');
 
     // Quote form state
     const [quoteItems, setQuoteItems] = useState<QuotationItem[]>([]);
@@ -166,6 +172,42 @@ export default function LaboratoryRequests() {
         }
     };
 
+    const handleSendToDB = async (request: ExamRequestWithPatient) => {
+        if (!profile?.db_codigo_apoiado || !profile?.db_senha_integracao) {
+            toast.error('Configure suas credenciais da DB Diagnósticos no perfil primeiro.');
+            // In a real app, redirect to settings or open settings dialog
+            return;
+        }
+
+        const dbPedido = DiagnosticosBrasilService.mapExamRequestToDB(
+            request.id,
+            request.id.slice(0, 8), // Use a simplified ID for ticket number
+            request.patient,
+            request.exam_types
+        );
+
+        const service = new DiagnosticosBrasilService({
+            codigoApoiado: profile.db_codigo_apoiado,
+            senhaIntegracao: profile.db_senha_integracao,
+            ambiente: 'homologacao'
+        });
+
+        const xml = service.generateRecebeAtendimentoXML(dbPedido);
+        setDbXmlPreview(xml);
+        setSelectedRequest(request); // Keep track of which request we are sending
+        setIsDBDialogOpen(true);
+    };
+
+    const confirmSendToDB = async () => {
+        // Simulate API call
+        toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
+            loading: 'Enviando para Diagnósticos do Brasil...',
+            success: 'Pedido enviado com sucesso para o Apoio!',
+            error: 'Erro ao enviar pedido.'
+        });
+        setIsDBDialogOpen(false);
+    };
+
     const updateItemPrice = (index: number, price: string) => {
         const newItems = [...quoteItems];
         newItems[index].price = parseFloat(price) || 0;
@@ -236,6 +278,7 @@ export default function LaboratoryRequests() {
                                 key={request.id}
                                 request={request}
                                 onCreateQuote={handleCreateQuote}
+                                onSendToDB={handleSendToDB}
                             />
                         ))
                     )}
@@ -254,6 +297,7 @@ export default function LaboratoryRequests() {
                                 key={request.id}
                                 request={request}
                                 onCreateQuote={handleCreateQuote}
+                                onSendToDB={handleSendToDB}
                             />
                         ))
                     )}
@@ -272,6 +316,7 @@ export default function LaboratoryRequests() {
                                 key={request.id}
                                 request={request}
                                 onCreateQuote={handleCreateQuote}
+                                onSendToDB={handleSendToDB}
                             />
                         ))
                     )}
@@ -377,6 +422,28 @@ export default function LaboratoryRequests() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* DB Integration Dialog */}
+            <Dialog open={isDBDialogOpen} onOpenChange={setIsDBDialogOpen}>
+                <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                        <DialogTitle>Enviar para Apoio (DB Diagnósticos)</DialogTitle>
+                        <DialogDescription>
+                            Revise o XML gerado antes de enviar para a integração.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="bg-slate-950 text-slate-50 p-4 rounded-md overflow-x-auto max-h-[400px] text-xs font-mono">
+                        <pre>{dbXmlPreview}</pre>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDBDialogOpen(false)}>Cancelar</Button>
+                        <Button onClick={confirmSendToDB} className="bg-blue-600 hover:bg-blue-700">
+                            <Server className="mr-2 h-4 w-4" />
+                            Confirmar Envio
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
@@ -385,9 +452,11 @@ export default function LaboratoryRequests() {
 function RequestCard({
     request,
     onCreateQuote,
+    onSendToDB,
 }: {
     request: ExamRequestWithPatient;
     onCreateQuote: (request: ExamRequestWithPatient) => void;
+    onSendToDB: (request: ExamRequestWithPatient) => void;
 }) {
     return (
         <Card className="hover:shadow-md transition-shadow">
@@ -428,9 +497,15 @@ function RequestCard({
                             </div>
                         </CardDescription>
                     </div>
-                    <Button onClick={() => onCreateQuote(request)}>
-                        Criar Orçamento
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => onSendToDB(request)}>
+                            <Server className="mr-2 h-4 w-4" />
+                            Apoio DB
+                        </Button>
+                        <Button onClick={() => onCreateQuote(request)}>
+                            Criar Orçamento
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="space-y-3">

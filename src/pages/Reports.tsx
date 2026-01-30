@@ -38,7 +38,7 @@ const Reports = () => {
         if (categories.length > 0 && selectedCategories.length === 0) {
             setSelectedCategories(categories);
         }
-    }, [categories]);
+    }, [categories, selectedCategories.length]);
 
     // Filtrar exames
     const filteredExams = useMemo(() => {
@@ -61,7 +61,7 @@ const Reports = () => {
         result = result.filter(e => selectedStatus.includes(e.status));
 
         // Filtro de categoria
-        if (filteredCategories => filteredCategories.length > 0) {
+        if (selectedCategories.length > 0) {
             result = result.filter(e => selectedCategories.includes(e.category || 'Geral'));
         }
 

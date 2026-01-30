@@ -36,6 +36,7 @@ const ScheduleAppointment = lazy(() => import("./pages/patient/ScheduleAppointme
 // Laboratory pages
 const LaboratoryDashboard = lazy(() => import("./pages/laboratory/Dashboard"));
 const LaboratoryRequests = lazy(() => import("./pages/laboratory/Requests"));
+const LaboratoryExamRequests = lazy(() => import("./pages/laboratory/LabRequests"));
 const LaboratoryAppointments = lazy(() => import("./pages/laboratory/Appointments"));
 
 const queryClient = new QueryClient({
@@ -166,6 +167,14 @@ const App = () => {
                       element={
                         <ProtectedRoute>
                           <LaboratoryAppointments />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/laboratory/exam-requests"
+                      element={
+                        <ProtectedRoute>
+                          <LaboratoryExamRequests />
                         </ProtectedRoute>
                       }
                     />
