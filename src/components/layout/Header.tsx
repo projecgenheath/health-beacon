@@ -124,8 +124,15 @@ export const Header = () => {
                 </div>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onClick={() => navigate('/profile')} className="rounded-lg py-2 cursor-pointer focus:bg-primary/10 focus:text-primary transition-colors">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Meu Perfil
+                  <div className="flex items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <div className="flex flex-col">
+                      <span>Meu Perfil</span>
+                      {userType === 'laboratory' && (
+                        <span className="text-[10px] text-muted-foreground font-normal">Configurar Integração DB</span>
+                      )}
+                    </div>
+                  </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-white/10" />
                 <DropdownMenuItem onClick={handleSignOut} className="rounded-lg py-2 text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer transition-colors">

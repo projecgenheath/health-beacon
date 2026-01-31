@@ -12,7 +12,9 @@ import {
     ChevronRight,
     Search,
     Clock,
-    User
+    Clock,
+    User,
+    Settings
 } from 'lucide-react';
 import type { ExamRequest, Quotation, CollectionAppointment, Profile } from '@/types/marketplace';
 import {
@@ -133,6 +135,10 @@ export default function LaboratoryDashboard() {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/profile'}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        Configurações
+                    </Button>
                     <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => window.location.href = '/laboratory/appointments'}>
                         <Calendar className="mr-2 h-4 w-4" />
                         Minha Agenda

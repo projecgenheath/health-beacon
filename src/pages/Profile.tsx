@@ -47,6 +47,9 @@ interface ProfileData {
   height: number | null;
   allergies: string | null;
   chronic_diseases: string | null;
+  // Laboratory
+  laboratory_name: string | null;
+  cnpj: string | null;
   // Integration
   db_codigo_apoiado: string | null;
   db_senha_integracao: string | null;
@@ -84,6 +87,10 @@ const Profile = () => {
     height: null,
     allergies: '',
     chronic_diseases: '',
+    allergies: '',
+    chronic_diseases: '',
+    laboratory_name: '',
+    cnpj: '',
     db_codigo_apoiado: '',
     db_senha_integracao: '',
     user_type: null,
@@ -133,6 +140,9 @@ const Profile = () => {
             height: profileData.height || null,
             allergies: profileData.allergies || '',
             chronic_diseases: profileData.chronic_diseases || '',
+            chronic_diseases: profileData.chronic_diseases || '',
+            laboratory_name: profileData.laboratory_name || '',
+            cnpj: profileData.cnpj || '',
             db_codigo_apoiado: profileData.db_codigo_apoiado || '',
             db_senha_integracao: profileData.db_senha_integracao || '',
             user_type: profileData.user_type || null,
@@ -375,119 +385,148 @@ const Profile = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="full_name" className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  Nome completo
-                </Label>
-                <Input
-                  id="full_name"
-                  value={profile.full_name || ''}
-                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                  className="h-12 rounded-xl"
-                />
-              </div>
+              {profile.user_type === 'laboratory' ? (
+                <>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="laboratory_name" className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Nome do Laboratório
+                    </Label>
+                    <Input
+                      id="laboratory_name"
+                      value={profile.laboratory_name || ''}
+                      onChange={(e) => setProfile({ ...profile, laboratory_name: e.target.value })}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Input
+                      id="cnpj"
+                      value={profile.cnpj || ''}
+                      onChange={(e) => setProfile({ ...profile, cnpj: e.target.value })}
+                      className="h-12 rounded-xl"
+                      placeholder="00.000.000/0000-00"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="full_name" className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      Nome completo
+                    </Label>
+                    <Input
+                      id="full_name"
+                      value={profile.full_name || ''}
+                      onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="birth_date" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  Data de nascimento
-                </Label>
-                <Input
-                  id="birth_date"
-                  type="date"
-                  value={profile.birth_date || ''}
-                  onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
-                  className="h-12 rounded-xl"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="birth_date" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      Data de nascimento
+                    </Label>
+                    <Input
+                      id="birth_date"
+                      type="date"
+                      value={profile.birth_date || ''}
+                      onChange={(e) => setProfile({ ...profile, birth_date: e.target.value })}
+                      className="h-12 rounded-xl"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="cpf">CPF</Label>
-                <Input
-                  id="cpf"
-                  value={profile.cpf || ''}
-                  onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
-                  className="h-12 rounded-xl"
-                  placeholder="000.000.000-00"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF</Label>
+                    <Input
+                      id="cpf"
+                      value={profile.cpf || ''}
+                      onChange={(e) => setProfile({ ...profile, cpf: e.target.value })}
+                      className="h-12 rounded-xl"
+                      placeholder="000.000.000-00"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="sex" className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  Sexo Biológico
-                </Label>
-                <Select
-                  value={profile.sex || ''}
-                  onValueChange={(value) => setProfile({ ...profile, sex: value })}
-                >
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sex" className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      Sexo Biológico
+                    </Label>
+                    <Select
+                      value={profile.sex || ''}
+                      onValueChange={(value) => setProfile({ ...profile, sex: value })}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="masculino">Masculino</SelectItem>
+                        <SelectItem value="feminino">Feminino</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="gender">Identidade de Gênero</Label>
-                <Select
-                  value={profile.gender || ''}
-                  onValueChange={(val) => setProfile({ ...profile, gender: val })}
-                >
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cisgenero">Cisgênero</SelectItem>
-                    <SelectItem value="transgenero">Transgênero</SelectItem>
-                    <SelectItem value="nao_binario">Não-binário</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                    <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Identidade de Gênero</Label>
+                    <Select
+                      value={profile.gender || ''}
+                      onValueChange={(val) => setProfile({ ...profile, gender: val })}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cisgenero">Cisgênero</SelectItem>
+                        <SelectItem value="transgenero">Transgênero</SelectItem>
+                        <SelectItem value="nao_binario">Não-binário</SelectItem>
+                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="prefiro_nao_informar">Prefiro não informar</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ethnicity">Etnia/Cor</Label>
-                <Select
-                  value={profile.ethnicity || ''}
-                  onValueChange={(val) => setProfile({ ...profile, ethnicity: val })}
-                >
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="branca">Branca</SelectItem>
-                    <SelectItem value="preta">Preta</SelectItem>
-                    <SelectItem value="parda">Parda</SelectItem>
-                    <SelectItem value="amarela">Amarela</SelectItem>
-                    <SelectItem value="indigena">Indígena</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ethnicity">Etnia/Cor</Label>
+                    <Select
+                      value={profile.ethnicity || ''}
+                      onValueChange={(val) => setProfile({ ...profile, ethnicity: val })}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="branca">Branca</SelectItem>
+                        <SelectItem value="preta">Preta</SelectItem>
+                        <SelectItem value="parda">Parda</SelectItem>
+                        <SelectItem value="amarela">Amarela</SelectItem>
+                        <SelectItem value="indigena">Indígena</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="marital_status">Estado Civil</Label>
-                <Select
-                  value={profile.marital_status || ''}
-                  onValueChange={(val) => setProfile({ ...profile, marital_status: val })}
-                >
-                  <SelectTrigger className="h-12 rounded-xl">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="solteiro">Solteiro(a)</SelectItem>
-                    <SelectItem value="casado">Casado(a)</SelectItem>
-                    <SelectItem value="separado">Separado(a)</SelectItem>
-                    <SelectItem value="divorciado">Divorciado(a)</SelectItem>
-                    <SelectItem value="viuvo">Viúvo(a)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="marital_status">Estado Civil</Label>
+                    <Select
+                      value={profile.marital_status || ''}
+                      onValueChange={(val) => setProfile({ ...profile, marital_status: val })}
+                    >
+                      <SelectTrigger className="h-12 rounded-xl">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solteiro">Solteiro(a)</SelectItem>
+                        <SelectItem value="casado">Casado(a)</SelectItem>
+                        <SelectItem value="separado">Separado(a)</SelectItem>
+                        <SelectItem value="divorciado">Divorciado(a)</SelectItem>
+                        <SelectItem value="viuvo">Viúvo(a)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -592,56 +631,58 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Health Section */}
-          <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '150ms' }}>
-            <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
-              <Heart className="h-5 w-5 text-primary" />
-              <h2 className="text-xl font-semibold">Dados de Saúde</h2>
+          {/* Health Section (Patients Only) */}
+          {profile.user_type === 'patient' && (
+            <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '150ms' }}>
+              <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
+                <Heart className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Dados de Saúde</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Peso (kg)</Label>
+                  <Input
+                    id="weight"
+                    type="number"
+                    step="0.1"
+                    value={profile.weight ?? ''}
+                    onChange={(e) => setProfile({ ...profile, weight: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="height">Altura (cm)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={profile.height ?? ''}
+                    onChange={(e) => setProfile({ ...profile, height: e.target.value ? parseFloat(e.target.value) : null })}
+                    className="h-12 rounded-xl"
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="allergies">Alergias</Label>
+                  <Textarea
+                    id="allergies"
+                    value={profile.allergies || ''}
+                    onChange={(e) => setProfile({ ...profile, allergies: e.target.value })}
+                    className="min-h-[100px] rounded-xl"
+                    placeholder="Liste suas alergias..."
+                  />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
+                  <Textarea
+                    id="chronic_diseases"
+                    value={profile.chronic_diseases || ''}
+                    onChange={(e) => setProfile({ ...profile, chronic_diseases: e.target.value })}
+                    className="min-h-[100px] rounded-xl"
+                    placeholder="Descreva doenças crônicas ou tratamentos em andamento..."
+                  />
+                </div>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="weight">Peso (kg)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  step="0.1"
-                  value={profile.weight ?? ''}
-                  onChange={(e) => setProfile({ ...profile, weight: e.target.value ? parseFloat(e.target.value) : null })}
-                  className="h-12 rounded-xl"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="height">Altura (cm)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={profile.height ?? ''}
-                  onChange={(e) => setProfile({ ...profile, height: e.target.value ? parseFloat(e.target.value) : null })}
-                  className="h-12 rounded-xl"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="allergies">Alergias</Label>
-                <Textarea
-                  id="allergies"
-                  value={profile.allergies || ''}
-                  onChange={(e) => setProfile({ ...profile, allergies: e.target.value })}
-                  className="min-h-[100px] rounded-xl"
-                  placeholder="Liste suas alergias..."
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="chronic_diseases">Doenças Crônicas / Tratamentos</Label>
-                <Textarea
-                  id="chronic_diseases"
-                  value={profile.chronic_diseases || ''}
-                  onChange={(e) => setProfile({ ...profile, chronic_diseases: e.target.value })}
-                  className="min-h-[100px] rounded-xl"
-                  placeholder="Descreva doenças crônicas ou tratamentos em andamento..."
-                />
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Integration Section (Laboratories Only) */}
           {profile.user_type === 'laboratory' && (
