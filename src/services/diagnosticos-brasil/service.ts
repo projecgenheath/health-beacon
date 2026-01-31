@@ -47,6 +47,7 @@ export class DiagnosticosBrasilService {
       <RecebeAtendimento>
          <atendimento>
             <CodigoApoiado>${this.config.codigoApoiado}</CodigoApoiado>
+            <CodigoUsuario>${this.config.usuario}</CodigoUsuario>
             <CodigoSenhaIntegracao>${this.config.senhaIntegracao}</CodigoSenhaIntegracao>
             <Pedido>
                <NumeroAtendimentoApoiado>${pedido.NumeroAtendimentoApoiado}</NumeroAtendimentoApoiado>

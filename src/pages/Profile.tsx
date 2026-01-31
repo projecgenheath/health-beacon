@@ -52,6 +52,7 @@ interface ProfileData {
   cnpj: string | null;
   // Integration
   db_codigo_apoiado: string | null;
+  db_usuario: string | null;
   db_senha_integracao: string | null;
   user_type: 'patient' | 'laboratory' | null;
 }
@@ -87,11 +88,11 @@ const Profile = () => {
     height: null,
     allergies: '',
     chronic_diseases: '',
-    allergies: '',
-    chronic_diseases: '',
+
     laboratory_name: '',
     cnpj: '',
     db_codigo_apoiado: '',
+    db_usuario: '',
     db_senha_integracao: '',
     user_type: null,
   });
@@ -140,10 +141,11 @@ const Profile = () => {
             height: profileData.height || null,
             allergies: profileData.allergies || '',
             chronic_diseases: profileData.chronic_diseases || '',
-            chronic_diseases: profileData.chronic_diseases || '',
+
             laboratory_name: profileData.laboratory_name || '',
             cnpj: profileData.cnpj || '',
             db_codigo_apoiado: profileData.db_codigo_apoiado || '',
+            db_usuario: profileData.db_usuario || '',
             db_senha_integracao: profileData.db_senha_integracao || '',
             user_type: profileData.user_type || null,
           });
@@ -700,7 +702,18 @@ const Profile = () => {
                     onChange={(e) => setProfile({ ...profile, db_codigo_apoiado: e.target.value })}
                     className="h-12 rounded-xl font-mono"
                     placeholder="Ex: 123456"
-                    type="password"
+                    type="text"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="db_usuario">Usuário da Integração</Label>
+                  <Input
+                    id="db_usuario"
+                    value={profile.db_usuario || ''}
+                    onChange={(e) => setProfile({ ...profile, db_usuario: e.target.value })}
+                    className="h-12 rounded-xl font-mono"
+                    placeholder="Ex: laboratorio_api"
+                    type="text"
                   />
                 </div>
                 <div className="space-y-2">

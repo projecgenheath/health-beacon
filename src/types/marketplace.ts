@@ -236,6 +236,7 @@ export type Database = {
                     cnpj: string | null
                     cpf: string | null
                     db_codigo_apoiado: string | null
+                    db_usuario: string | null
                     db_senha_integracao: string | null
                     created_at: string
                     description: string | null
@@ -275,6 +276,7 @@ export type Database = {
                     cnpj?: string | null
                     cpf?: string | null
                     db_codigo_apoiado?: string | null
+                    db_usuario?: string | null
                     db_senha_integracao?: string | null
                     created_at?: string
                     description?: string | null
@@ -314,6 +316,7 @@ export type Database = {
                     cnpj?: string | null
                     cpf?: string | null
                     db_codigo_apoiado?: string | null
+                    db_usuario?: string | null
                     db_senha_integracao?: string | null
                     created_at?: string
                     description?: string | null

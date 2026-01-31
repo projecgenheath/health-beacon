@@ -3,6 +3,7 @@
 
 export interface DBConfig {
     codigoApoiado: string;
+    usuario: string;
     senhaIntegracao: string;
     ambiente: 'producao' | 'homologacao';
 }
