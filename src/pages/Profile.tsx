@@ -706,13 +706,13 @@ const Profile = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="db_usuario">Usuário da Integração</Label>
+                  <Label htmlFor="db_usuario">Usuário da Integração (CPF)</Label>
                   <Input
                     id="db_usuario"
                     value={profile.db_usuario || ''}
                     onChange={(e) => setProfile({ ...profile, db_usuario: e.target.value })}
                     className="h-12 rounded-xl font-mono"
-                    placeholder="Ex: laboratorio_api"
+                    placeholder="000.000.000-00"
                     type="text"
                   />
                 </div>

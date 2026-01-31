@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard, FileStack, Upload, Activity } from 'lucide-react';
+import { User, LogOut, Settings, GitCompare, BarChart3, LayoutDashboard, FileStack, Upload, Activity, Beaker, Briefcase } from 'lucide-react';
 import logoImg from '@/assets/logo.svg';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,7 +43,9 @@ export const Header = () => {
       return [
         { name: 'Dashboard', path: '/laboratory/dashboard', icon: LayoutDashboard },
         { name: 'Pedidos', path: '/laboratory/requests', icon: FileStack },
+        { name: 'Produção', path: '/laboratory/exam-requests', icon: Briefcase },
         { name: 'Agendamentos', path: '/laboratory/appointments', icon: Activity },
+        { name: 'Catálogo', path: '/laboratory/services', icon: Beaker },
       ];
     }
     return [{ name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }];
