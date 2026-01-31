@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Search, FileText, Clock, AlertCircle, Server } from 'lucide-react';
+import { Calendar, Search, FileText, Clock, AlertCircle, Server, Eye, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ExamRequest, Profile, QuotationItem } from '@/types/marketplace';
 import { format } from 'date-fns';
@@ -220,6 +220,30 @@ export default function LaboratoryRequests() {
         setQuoteItems(newItems);
     };
 
+    const updateItemName = (index: number, name: string) => {
+        const newItems = [...quoteItems];
+        newItems[index].exam_name = name;
+        setQuoteItems(newItems);
+    };
+
+    const handleAddItem = () => {
+        setQuoteItems([
+            ...quoteItems,
+            { exam_name: '', price: 0, preparation_required: '' }
+        ]);
+    };
+
+    const handleRemoveItem = (index: number) => {
+        const newItems = [...quoteItems];
+        newItems.splice(index, 1);
+        setQuoteItems(newItems);
+    };
+
+    const getDocumentUrl = (path: string | null) => {
+        if (!path) return null;
+        return supabase.storage.from('exam-requests').getPublicUrl(path).data.publicUrl;
+    };
+
     if (isLoading) {
         return (
             <div className="container max-w-6xl mx-auto p-4">
@@ -325,7 +349,7 @@ export default function LaboratoryRequests() {
 
             {/* Quote Dialog */}
             <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Criar Orçamento</DialogTitle>
                         <DialogDescription>
@@ -333,84 +357,147 @@ export default function LaboratoryRequests() {
                         </DialogDescription>
                     </DialogHeader>
 
-                    <div className="space-y-4">
-                        {/* Exam Items */}
-                        <div className="space-y-3">
-                            <Label>Exames e Preços</Label>
-                            {quoteItems.map((item, index) => (
-                                <Card key={index}>
-                                    <CardContent className="p-4 space-y-2">
-                                        <div className="font-medium">{item.exam_name}</div>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <Label htmlFor={`price-${index}`}>Preço (R$)</Label>
-                                                <Input
-                                                    id={`price-${index}`}
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    placeholder="0.00"
-                                                    value={item.price || ''}
-                                                    onChange={(e) => updateItemPrice(index, e.target.value)}
-                                                />
-                                            </div>
-                                            <div>
-                                                <Label htmlFor={`prep-${index}`}>Preparo (opcional)</Label>
-                                                <Input
-                                                    id={`prep-${index}`}
-                                                    placeholder="Ex: Jejum de 8h"
-                                                    value={item.preparation_required || ''}
-                                                    onChange={(e) => updateItemPreparation(index, e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Document Preview Section */}
+                        {selectedRequest?.document_url && (
+                            <div className="space-y-2">
+                                <Label>Pedido Médico (Original)</Label>
+                                <div className="border rounded-lg p-2 h-[500px] bg-slate-50 overflow-hidden relative group flex items-center justify-center">
+                                    {selectedRequest.document_url.toLowerCase().endsWith('.pdf') ? (
+                                        <iframe
+                                            src={getDocumentUrl(selectedRequest.document_url)!}
+                                            className="w-full h-full"
+                                            title="Documento do Pedido"
+                                        />
+                                    ) : (
+                                        <img
+                                            src={getDocumentUrl(selectedRequest.document_url)!}
+                                            className="max-w-full max-h-full object-contain"
+                                            alt="Documento do Pedido"
+                                        />
+                                    )}
+                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button size="sm" variant="secondary" asChild>
+                                            <a href={getDocumentUrl(selectedRequest.document_url)!} target="_blank" rel="noopener noreferrer">
+                                                <ExternalLink className="h-4 w-4 mr-2" />
+                                                Abrir
+                                            </a>
+                                        </Button>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Compare os exames identificados com a imagem original.
+                                </p>
+                            </div>
+                        )}
 
-                        {/* Total */}
-                        <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
-                            <span className="font-semibold">Total:</span>
-                            <span className="text-xl font-bold">
-                                R$ {quoteItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
-                            </span>
-                        </div>
+                        <div className={selectedRequest?.document_url ? "" : "col-span-2"}>
+                            <div className="space-y-4">
+                                {/* Exam Items */}
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center">
+                                        <Label>Exames e Preços</Label>
+                                        <Button size="sm" variant="outline" onClick={handleAddItem}>
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Adicionar Exame
+                                        </Button>
+                                    </div>
 
-                        {/* Delivery Days */}
-                        <div>
-                            <Label htmlFor="delivery-days">Prazo de Entrega (dias)</Label>
-                            <Input
-                                id="delivery-days"
-                                type="number"
-                                min="1"
-                                value={deliveryDays}
-                                onChange={(e) => setDeliveryDays(parseInt(e.target.value) || 1)}
-                            />
-                        </div>
+                                    <div className="max-h-[400px] overflow-y-auto space-y-3 pr-2">
+                                        {quoteItems.map((item, index) => (
+                                            <Card key={index} className="relative group">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6"
+                                                    onClick={() => handleRemoveItem(index)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                                <CardContent className="p-4 space-y-3">
+                                                    <div>
+                                                        <Label htmlFor={`name-${index}`} className="text-xs text-muted-foreground">Nome do Exame</Label>
+                                                        <Input
+                                                            id={`name-${index}`}
+                                                            value={item.exam_name}
+                                                            onChange={(e) => updateItemName(index, e.target.value)}
+                                                            placeholder="Nome do exame"
+                                                            className="font-medium"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <div>
+                                                            <Label htmlFor={`price-${index}`} className="text-xs text-muted-foreground">Preço (R$)</Label>
+                                                            <Input
+                                                                id={`price-${index}`}
+                                                                type="number"
+                                                                step="0.01"
+                                                                min="0"
+                                                                placeholder="0.00"
+                                                                value={item.price || ''}
+                                                                onChange={(e) => updateItemPrice(index, e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <Label htmlFor={`prep-${index}`} className="text-xs text-muted-foreground">Preparo</Label>
+                                                            <Input
+                                                                id={`prep-${index}`}
+                                                                placeholder="Ex: Jejum"
+                                                                value={item.preparation_required || ''}
+                                                                onChange={(e) => updateItemPreparation(index, e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </div>
 
-                        {/* Valid Days */}
-                        <div>
-                            <Label htmlFor="valid-days">Validade do Orçamento (dias)</Label>
-                            <Input
-                                id="valid-days"
-                                type="number"
-                                min="1"
-                                value={validDays}
-                                onChange={(e) => setValidDays(parseInt(e.target.value) || 1)}
-                            />
-                        </div>
+                                {/* Total */}
+                                <div className="flex justify-between items-center p-3 bg-secondary rounded-lg">
+                                    <span className="font-semibold">Total:</span>
+                                    <span className="text-xl font-bold">
+                                        R$ {quoteItems.reduce((sum, item) => sum + item.price, 0).toFixed(2)}
+                                    </span>
+                                </div>
 
-                        {/* Notes */}
-                        <div>
-                            <Label htmlFor="notes">Observações (opcional)</Label>
-                            <Textarea
-                                id="notes"
-                                placeholder="Informações adicionais sobre o orçamento..."
-                                rows={3}
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                            />
+                                {/* Delivery Days */}
+                                <div>
+                                    <Label htmlFor="delivery-days">Prazo de Entrega (dias)</Label>
+                                    <Input
+                                        id="delivery-days"
+                                        type="number"
+                                        min="1"
+                                        value={deliveryDays}
+                                        onChange={(e) => setDeliveryDays(parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+
+                                {/* Valid Days */}
+                                <div>
+                                    <Label htmlFor="valid-days">Validade do Orçamento (dias)</Label>
+                                    <Input
+                                        id="valid-days"
+                                        type="number"
+                                        min="1"
+                                        value={validDays}
+                                        onChange={(e) => setValidDays(parseInt(e.target.value) || 1)}
+                                    />
+                                </div>
+
+                                {/* Notes */}
+                                <div>
+                                    <Label htmlFor="notes">Observações (opcional)</Label>
+                                    <Textarea
+                                        id="notes"
+                                        placeholder="Informações adicionais sobre o orçamento..."
+                                        rows={3}
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -498,6 +585,14 @@ function RequestCard({
                         </CardDescription>
                     </div>
                     <div className="flex gap-2">
+                        {request.document_url && (
+                            <Button variant="secondary" size="sm" asChild>
+                                <a href={supabase.storage.from('exam-requests').getPublicUrl(request.document_url).data.publicUrl} target="_blank" rel="noopener noreferrer">
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Ver Pedido
+                                </a>
+                            </Button>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => onSendToDB(request)}>
                             <Server className="mr-2 h-4 w-4" />
                             Apoio DB

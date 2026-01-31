@@ -91,6 +91,7 @@ export type Database = {
                     preferred_date: string | null
                     selected_quotation_id: string | null
                     status: string | null
+                    document_url: string | null
                     updated_at: string
                     urgency_level: string | null
                 }
@@ -234,6 +235,8 @@ export type Database = {
                     chronic_diseases: string | null
                     cnpj: string | null
                     cpf: string | null
+                    db_codigo_apoiado: string | null
+                    db_senha_integracao: string | null
                     created_at: string
                     description: string | null
                     emergency_phone: string | null
@@ -271,6 +274,8 @@ export type Database = {
                     chronic_diseases?: string | null
                     cnpj?: string | null
                     cpf?: string | null
+                    db_codigo_apoiado?: string | null
+                    db_senha_integracao?: string | null
                     created_at?: string
                     description?: string | null
                     emergency_phone?: string | null
@@ -308,6 +313,8 @@ export type Database = {
                     chronic_diseases?: string | null
                     cnpj?: string | null
                     cpf?: string | null
+                    db_codigo_apoiado?: string | null
+                    db_senha_integracao?: string | null
                     created_at?: string
                     description?: string | null
                     emergency_phone?: string | null

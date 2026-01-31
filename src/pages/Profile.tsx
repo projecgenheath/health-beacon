@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload, Bell, MapPin, Phone, Heart, FileText } from 'lucide-react';
+import { ArrowLeft, Loader2, User, Calendar, Users, Camera, Upload, Bell, MapPin, Phone, Heart, FileText, Lock, Database } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -47,6 +47,10 @@ interface ProfileData {
   height: number | null;
   allergies: string | null;
   chronic_diseases: string | null;
+  // Integration
+  db_codigo_apoiado: string | null;
+  db_senha_integracao: string | null;
+  user_type: 'patient' | 'laboratory' | null;
 }
 
 const Profile = () => {
@@ -80,6 +84,9 @@ const Profile = () => {
     height: null,
     allergies: '',
     chronic_diseases: '',
+    db_codigo_apoiado: '',
+    db_senha_integracao: '',
+    user_type: null,
   });
 
   useEffect(() => {
@@ -126,6 +133,9 @@ const Profile = () => {
             height: profileData.height || null,
             allergies: profileData.allergies || '',
             chronic_diseases: profileData.chronic_diseases || '',
+            db_codigo_apoiado: profileData.db_codigo_apoiado || '',
+            db_senha_integracao: profileData.db_senha_integracao || '',
+            user_type: profileData.user_type || null,
           });
         }
       } catch (error) {
@@ -632,6 +642,44 @@ const Profile = () => {
               </div>
             </div>
           </div>
+
+          {/* Integration Section (Laboratories Only) */}
+          {profile.user_type === 'laboratory' && (
+            <div className="rounded-2xl bg-card p-6 shadow-md animate-slide-up" style={{ animationDelay: '175ms' }}>
+              <div className="flex items-center gap-2 pb-4 mb-4 border-b border-border/50">
+                <Database className="h-5 w-5 text-primary" />
+                <h2 className="text-xl font-semibold">Integração DB Diagnósticos</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="db_codigo_apoiado">Código do Apoiado</Label>
+                  <Input
+                    id="db_codigo_apoiado"
+                    value={profile.db_codigo_apoiado || ''}
+                    onChange={(e) => setProfile({ ...profile, db_codigo_apoiado: e.target.value })}
+                    className="h-12 rounded-xl font-mono"
+                    placeholder="Ex: 123456"
+                    type="password"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="db_senha_integracao">Senha de Integração</Label>
+                  <Input
+                    id="db_senha_integracao"
+                    value={profile.db_senha_integracao || ''}
+                    onChange={(e) => setProfile({ ...profile, db_senha_integracao: e.target.value })}
+                    className="h-12 rounded-xl font-mono"
+                    placeholder="••••••••"
+                    type="password"
+                  />
+                </div>
+                <p className="md:col-span-2 text-sm text-muted-foreground">
+                  Estas credenciais são usadas para enviar pedidos e receber resultados diretamente da Diagnósticos do Brasil.
+                  Elas são armazenadas de forma segura.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Notification Preferences Card */}
           <Card className="animate-slide-up" style={{ animationDelay: '200ms' }}>
