@@ -24,6 +24,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const ExamReport = lazy(() => import("./pages/ExamReport"));
 const CompareExams = lazy(() => import("./pages/CompareExams"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const DetailedExam = lazy(() => import("./pages/DetailedExam"));
 const SharedExamView = lazy(() => import("./pages/SharedExamView"));
 const Reports = lazy(() => import("./pages/Reports"));
 const Register = lazy(() => import("./pages/Register"));
@@ -95,6 +96,7 @@ const App = () => {
                     >
                       <Route index element={<Index />} />
                       <Route path="analytics" element={<Analytics />} />
+                      <Route path="health-progress" element={<DetailedExam />} />
                       <Route path="compare" element={<CompareExams />} />
                       <Route path="reports" element={<Reports />} />
                     </Route>

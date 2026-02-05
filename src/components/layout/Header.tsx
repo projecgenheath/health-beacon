@@ -37,6 +37,7 @@ export const Header = () => {
     if (userType === 'patient') {
       return [
         { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+        { name: 'Relatórios', path: '/dashboard/reports', icon: FileStack },
         { name: 'Solicitar Exame', path: '/patient/request-exam', icon: Upload },
       ];
     } else if (userType === 'laboratory') {
@@ -62,7 +63,7 @@ export const Header = () => {
             <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => navigate(userType === 'laboratory' ? '/laboratory/dashboard' : '/dashboard')}>
               <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/20 shadow-glow-primary transition-spring hover:scale-110">
                 <img
-                  src={logoImg}
+                   src={logoImg}
                   alt="BHB Logo"
                   className="h-6 w-6 object-contain"
                 />
@@ -176,4 +177,3 @@ export const Header = () => {
     </header>
   );
 };
-
