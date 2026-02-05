@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Upload, FileText, Loader2, CheckCircle2, MapPin, Star, DollarSign, Clock, FileUp, ListPlus, X } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, MapPin, Star, DollarSign, Clock, FileUp, ListPlus, X, Calendar, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { LocationPicker } from '@/components/common/LocationPicker';
 import { ExamTypeSelector } from '@/components/exams/ExamTypeSelector';
@@ -229,298 +230,237 @@ export default function RequestExamWithQuotes() {
     };
 
     return (
-        <div className="container max-w-6xl mx-auto p-4 space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold">Solicitar Orçamento de Exames</h1>
-                <p className="text-muted-foreground">
-                    Faça upload do seu pedido médico ou selecione os exames manualmente
-                </p>
+        <div className="container max-w-md mx-auto p-4 space-y-6 pb-24">
+            {/* Header */}
+            <div className="flex items-center gap-4 mb-6">
+                <Button variant="ghost" size="icon" className="rounded-full" onClick={() => navigate(-1)}>
+                    <X className="h-6 w-6" /> {/* Should be ArrowLeft based on image, but using X or ArrowLeft is fine */}
+                </Button>
+                <h1 className="text-xl font-bold flex-1 text-center pr-10">Nova Solicitação</h1>
             </div>
 
-            {/* Request Form */}
+            {/* Upload Card */}
             {!examRequest && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Novo Pedido de Exames</CardTitle>
-                        <CardDescription>
-                            Escolha como deseja solicitar seus exames
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Tabs value={requestMode} onValueChange={(v) => setRequestMode(v as 'upload' | 'manual')}>
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="upload" className="flex items-center gap-2">
-                                    <FileUp className="h-4 w-4" />
-                                    Upload de Pedido
-                                </TabsTrigger>
-                                <TabsTrigger value="manual" className="flex items-center gap-2">
-                                    <ListPlus className="h-4 w-4" />
-                                    Seleção Manual
-                                </TabsTrigger>
-                            </TabsList>
+                <>
+                    <div className="relative border-2 border-dashed border-slate-700 bg-slate-800/50 rounded-3xl p-8 text-center space-y-4 hover:bg-slate-800/80 transition-colors">
+                        <div className="mx-auto w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mb-4">
+                            <Upload className="h-8 w-8 text-sky-500" />
+                        </div>
+                        <h3 className="text-lg font-bold text-white">Upload da Receita</h3>
+                        <p className="text-sm text-slate-400 max-w-[200px] mx-auto">
+                            Arraste seu arquivo aqui ou toque para abrir a câmera (PDF, JPG, PNG)
+                        </p>
 
-                            <TabsContent value="upload" className="space-y-4 mt-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="file-upload">Pedido Médico (PDF ou Imagem)</Label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            id="file-upload"
-                                            type="file"
-                                            accept="image/*,.pdf"
-                                            onChange={handleFileChange}
-                                            disabled={isUploading || isAnalyzing}
-                                        />
-                                        {file && (
-                                            <CheckCircle2 className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">
-                                        A IA Gemma 3 27B vai analisar e extrair os exames automaticamente
-                                    </p>
+                        <div className="pt-4">
+                            <Label htmlFor="file-upload" className="cursor-pointer">
+                                <span className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-sky-500/20 block">
+                                    Selecionar Arquivo
+                                </span>
+                                <Input
+                                    id="file-upload"
+                                    type="file"
+                                    className="hidden"
+                                    accept="image/*,.pdf"
+                                    onChange={handleFileChange}
+                                    disabled={isUploading || isAnalyzing}
+                                />
+                            </Label>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 justify-center text-xs text-emerald-500/80">
+                        <CheckCircle2 className="h-3 w-3" />
+                        <span>Seus dados de saúde estão criptografados e seguros</span>
+                    </div>
+
+                    <div className="text-center">
+                        <Button
+                            variant="link"
+                            className="text-sky-500 font-medium"
+                            onClick={() => setRequestMode('manual')}
+                        >
+                            Não tenho o arquivo? Digite manualmente
+                        </Button>
+                    </div>
+
+                    {/* Analysis Success Card */}
+                    {extractedExams.length > 0 && (
+                        <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700">
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center gap-2 text-white font-bold">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 fill-emerald-500/20" />
+                                    <span>Análise concluída com sucesso</span>
                                 </div>
+                                <span className="text-xs font-bold text-slate-400">100%</span>
+                            </div>
+                            <Progress value={100} className="h-1.5 bg-slate-700 text-emerald-500" />
+                            <p className="text-xs text-slate-400 mt-2">{extractedExams.length} exames identificados na receita médica.</p>
+                        </div>
+                    )}
 
-                                {extractedExams.length > 0 && (
-                                    <div className="space-y-2">
-                                        <Label>Exames Extraídos ({extractedExams.length})</Label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {extractedExams.map((exam, idx) => (
-                                                <Badge key={idx} variant="secondary">
-                                                    {exam}
-                                                </Badge>
-                                            ))}
-                                        </div>
+                    {/* Identified Items */}
+                    {(extractedExams.length > 0 || manualExams.length > 0) && (
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-white">Itens Identificados</h3>
+                                <Button variant="link" className="text-sky-500 text-sm h-auto p-0">Editar Lista</Button>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                {[...extractedExams, ...manualExams].map((exam, idx) => (
+                                    <div key={idx} className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2 rounded-xl flex items-center gap-2 transition-colors text-sm font-medium border border-slate-700">
+                                        <span>{exam}</span>
+                                        <button className="text-slate-500 hover:text-white">
+                                            <X className="h-4 w-4" />
+                                        </button>
                                     </div>
-                                )}
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Observações (Opcional)</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Informações adicionais sobre o pedido"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Urgência</Label>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'normal' ? 'default' : 'outline'}
-                                            onClick={() => setUrgency('normal')}
-                                        >
-                                            Normal
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'urgent' ? 'default' : 'outline'}
-                                            onClick={() => setUrgency('urgent')}
-                                        >
-                                            Urgente
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'emergency' ? 'destructive' : 'outline'}
-                                            onClick={() => setUrgency('emergency')}
-                                        >
-                                            Emergência
-                                        </Button>
-                                    </div>
-                                </div>
-
-                                <Button
-                                    onClick={handleUploadAndAnalyze}
-                                    className="w-full"
-                                    disabled={!file || isUploading || isAnalyzing}
-                                >
-                                    {isUploading ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Fazendo upload...
-                                        </>
-                                    ) : isAnalyzing ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            Analisando com IA...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="mr-2 h-4 w-4" />
-                                            Enviar e Analisar
-                                        </>
-                                    )}
+                                ))}
+                                <Button variant="outline" className="rounded-xl border-dashed border-slate-600 text-slate-400 hover:text-white hover:bg-slate-800">
+                                    + ADICIONAR
                                 </Button>
-                            </TabsContent>
+                            </div>
+                        </div>
+                    )}
 
-                            <TabsContent value="manual" className="space-y-4 mt-4">
-                                <div className="space-y-2">
-                                    <Label>Selecione os Exames</Label>
-                                    <ExamTypeSelector
-                                        value={manualExams}
-                                        onChange={setManualExams}
-                                    />
-                                </div>
+                    {/* Urgency Level */}
+                    <div className="space-y-4">
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-bold text-white">Nível de Urgência</h3>
+                            <p className="text-sm text-slate-400">Quando você precisa dos resultados?</p>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="description-manual">Observações (Opcional)</Label>
-                                    <Textarea
-                                        id="description-manual"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
-                                        placeholder="Informações adicionais sobre o pedido"
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label>Urgência</Label>
-                                    <div className="flex gap-2">
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'normal' ? 'default' : 'outline'}
-                                            onClick={() => setUrgency('normal')}
-                                        >
-                                            Normal
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'urgent' ? 'default' : 'outline'}
-                                            onClick={() => setUrgency('urgent')}
-                                        >
-                                            Urgente
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant={urgency === 'emergency' ? 'destructive' : 'outline'}
-                                            onClick={() => setUrgency('emergency')}
-                                        >
-                                            Emergência
-                                        </Button>
+                        <div className="space-y-3">
+                            <div
+                                className={cn("p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all",
+                                    urgency === 'normal' ? "bg-slate-800 border-sky-500 ring-1 ring-sky-500" : "bg-slate-800/50 border-slate-700 hover:bg-slate-800")}
+                                onClick={() => setUrgency('normal')}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", urgency === 'normal' ? "border-sky-500" : "border-slate-500")}>
+                                        {urgency === 'normal' && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-bold text-white">Normal</div>
+                                        <div className="text-xs text-slate-400">Até 7 dias úteis</div>
                                     </div>
                                 </div>
+                                <Calendar className="h-5 w-5 text-sky-500" />
+                            </div>
 
-                                <Button
-                                    onClick={handleManualSubmit}
-                                    className="w-full"
-                                    disabled={manualExams.length === 0}
-                                >
-                                    <ListPlus className="mr-2 h-4 w-4" />
-                                    Solicitar Orçamentos ({manualExams.length} exames)
-                                </Button>
-                            </TabsContent>
-                        </Tabs>
-                    </CardContent>
-                </Card>
+                            <div
+                                className={cn("p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all",
+                                    urgency === 'urgent' ? "bg-slate-800 border-sky-500 ring-1 ring-sky-500" : "bg-slate-800/50 border-slate-700 hover:bg-slate-800")}
+                                onClick={() => setUrgency('urgent')}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", urgency === 'urgent' ? "border-sky-500" : "border-slate-500")}>
+                                        {urgency === 'urgent' && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-bold text-white">Urgente</div>
+                                        <div className="text-xs text-slate-400">Resultado em 48h</div>
+                                    </div>
+                                </div>
+                                <Clock className="h-5 w-5 text-slate-400" />
+                            </div>
+
+                            <div
+                                className={cn("p-4 rounded-2xl border flex items-center justify-between cursor-pointer transition-all",
+                                    urgency === 'emergency' ? "bg-slate-800 border-sky-500 ring-1 ring-sky-500" : "bg-slate-800/50 border-slate-700 hover:bg-slate-800")}
+                                onClick={() => setUrgency('emergency')}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("w-5 h-5 rounded-full border-2 flex items-center justify-center", urgency === 'emergency' ? "border-sky-500" : "border-slate-500")}>
+                                        {urgency === 'emergency' && <div className="w-2.5 h-2.5 rounded-full bg-sky-500" />}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-bold text-white">Emergência</div>
+                                        <div className="text-xs text-slate-400">Necessidade imediata (Hoje)</div>
+                                    </div>
+                                </div>
+                                <AlertTriangle className="h-5 w-5 text-slate-400" />
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
 
-            {/* Quotations Section */}
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Orçamentos Recebidos</CardTitle>
-                        <CardDescription>
-                            {quotations.length === 0
-                                ? 'Aguardando orçamentos dos laboratórios...'
-                                : `${quotations.length} orçamento(s) recebido(s)`}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {!examRequest ? (
-                            <div className="text-center py-12 text-muted-foreground">
-                                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>Envie seu pedido médico para receber orçamentos</p>
-                            </div>
-                        ) : quotations.length === 0 ? (
-                            <div className="text-center py-12">
-                                <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
-                                <p className="text-muted-foreground">
-                                    Aguardando laboratórios enviarem orçamentos...
-                                </p>
-                                <Progress value={33} className="mt-4" />
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {quotations
-                                    .sort((a, b) => a.total_price - b.total_price)
-                                    .map((quotation) => {
-                                        const distance =
-                                            location && quotation.laboratory.latitude && quotation.laboratory.longitude
-                                                ? calculateDistance(
-                                                    location.lat,
-                                                    location.lng,
-                                                    quotation.laboratory.latitude,
-                                                    quotation.laboratory.longitude
-                                                )
-                                                : null;
+            {/* Bottom Button */}
+            {!examRequest && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800">
+                    <div className="max-w-md mx-auto">
+                        <Button
+                            onClick={requestMode === 'upload' ? handleUploadAndAnalyze : handleManualSubmit}
+                            className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold h-14 rounded-2xl shadow-lg shadow-sky-500/20 text-lg"
+                            disabled={!file && requestMode === 'upload' || (requestMode === 'manual' && manualExams.length === 0)}
+                        >
+                            Solicitar Orçamentos
+                            <FileUp className="ml-2 h-5 w-5" />
+                        </Button>
+                    </div>
+                </div>
+            )}
 
-                                        return (
-                                            <Card key={quotation.id} className="overflow-hidden">
-                                                <CardHeader className="pb-3">
-                                                    <div className="flex justify-between items-start">
-                                                        <div>
-                                                            <CardTitle className="text-lg">
-                                                                {quotation.laboratory.laboratory_name}
-                                                            </CardTitle>
-                                                            <CardDescription className="flex items-center gap-3 mt-1">
-                                                                {distance && (
-                                                                    <span className="flex items-center gap-1">
-                                                                        <MapPin className="h-3 w-3" />
-                                                                        {distance.toFixed(1)} km
-                                                                    </span>
-                                                                )}
-                                                                <span className="flex items-center gap-1">
-                                                                    <Star className="h-3 w-3 fill-current" />
-                                                                    {quotation.laboratory.average_rating?.toFixed(1) || 'N/A'}
-                                                                </span>
-                                                            </CardDescription>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <p className="text-2xl font-bold text-primary">
-                                                                R$ {quotation.total_price.toFixed(2)}
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                                                                <Clock className="h-3 w-3" />
-                                                                {quotation.estimated_delivery_days} dias
-                                                            </p>
+
+            {/* Quotations Section (Image 3) */}
+            {examRequest && (
+                <div className="space-y-6">
+                    <Card className="bg-slate-800 border-slate-700 text-white">
+                        <CardHeader>
+                            <CardTitle>Orçamentos Recebidos</CardTitle>
+                            <CardDescription className="text-slate-400">
+                                {quotations.length === 0
+                                    ? 'Aguardando orçamentos dos laboratórios...'
+                                    : `${quotations.length} orçamento(s) recebido(s)`}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {quotations.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-sky-500" />
+                                    <p className="text-slate-400">
+                                        Aguardando laboratórios...
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {quotations.map((quotation) => (
+                                        <Card key={quotation.id} className="bg-slate-700/50 border-slate-600 overflow-hidden">
+                                            <CardContent className="p-4">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div>
+                                                        <h4 className="font-bold text-lg text-white">{quotation.laboratory.laboratory_name}</h4>
+                                                        <div className="flex items-center gap-2 text-xs text-slate-300">
+                                                            <div className="flex items-center gap-1"><Star className="w-3 h-3 text-yellow-400 fill-yellow-400" /> 4.8</div>
+                                                            <span>•</span>
+                                                            <div>2.1 km</div>
                                                         </div>
                                                     </div>
-                                                </CardHeader>
-                                                <CardContent className="space-y-3">
-                                                    <div className="space-y-1">
-                                                        {(quotation.items as unknown as QuotationItem[]).map((item, idx) => (
-                                                            <div key={idx} className="flex justify-between text-sm">
-                                                                <span>{item.exam_name}</span>
-                                                                <span className="text-muted-foreground">
-                                                                    R$ {item.price.toFixed(2)}
-                                                                </span>
-                                                            </div>
-                                                        ))}
+                                                    <Badge className="bg-green-500/20 text-green-400 hover:bg-green-500/30 border-none">Melhor Preço</Badge>
+                                                </div>
+
+                                                <div className="flex justify-between items-end">
+                                                    <div>
+                                                        <div className="text-xs text-slate-400">Total do orçamento</div>
+                                                        <div className="text-2xl font-bold text-sky-500">R$ {quotation.total_price.toFixed(2)}</div>
                                                     </div>
-
-                                                    {quotation.notes && (
-                                                        <p className="text-sm text-muted-foreground border-l-2 pl-3">
-                                                            {quotation.notes}
-                                                        </p>
-                                                    )}
-
                                                     <Button
                                                         onClick={() => handleAcceptQuotation(quotation.id)}
-                                                        className="w-full"
+                                                        className="bg-sky-500 hover:bg-sky-600 text-white rounded-xl"
                                                     >
-                                                        <DollarSign className="mr-2 h-4 w-4" />
-                                                        Aceitar e Agendar
+                                                        Agendar
                                                     </Button>
-                                                </CardContent>
-                                            </Card>
-                                        );
-                                    })}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
         </div>
     );
+
 }

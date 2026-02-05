@@ -1,8 +1,5 @@
-import { useNavigate } from 'react-router-dom';
 import { HealthSummary } from '@/types/exam';
-import { CheckCircle2, AlertTriangle, AlertCircle, ArrowLeftRight, Sparkles } from 'lucide-react';
-import logoImg from '@/assets/logo.svg';
-import { Button } from '@/components/ui/button';
+import { Heart, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface HealthSummaryCardProps {
@@ -12,135 +9,69 @@ interface HealthSummaryCardProps {
 }
 
 export const HealthSummaryCard = ({ summary, onStatusClick, activeStatuses = [] }: HealthSummaryCardProps) => {
-  const navigate = useNavigate();
-  const healthPercentage = summary.totalExams > 0 ? Math.round((summary.healthy / summary.totalExams) * 100) : 0;
+  // Mock health score logic based on summary
+  const score = summary.totalExams > 0 ? Math.round((summary.healthy / summary.totalExams) * 100) : 100;
 
-  const getHealthMessage = () => {
-    if (healthPercentage >= 90) return { text: 'Excelente!', emoji: '🎉' };
-    if (healthPercentage >= 70) return { text: 'Muito bom!', emoji: '😊' };
-    if (healthPercentage >= 50) return { text: 'Atenção', emoji: '⚠️' };
-    return { text: 'Cuide-se', emoji: '🏥' };
-  };
+  // Determine status text and color
+  let statusText = 'Estável';
+  let statusColor = 'bg-emerald-500/20 text-emerald-500'; // Green
+  let statusIcon = <Activity className="w-3 h-3 mr-1" />;
 
-  const healthMessage = getHealthMessage();
+  if (score < 70) {
+    statusText = 'Atenção';
+    statusColor = 'bg-amber-500/20 text-amber-500';
+  }
+  if (score < 50) {
+    statusText = 'Crítico';
+    statusColor = 'bg-red-500/20 text-red-500';
+  }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl p-4 sm:p-6 animate-slide-up hover-lift glass-card border-none">
-      {/* Animated background decorations */}
-      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/20 blur-3xl animate-pulse-slow" />
-      <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-status-healthy/20 blur-3xl animate-float" />
-      <div className="absolute top-1/2 right-4 h-16 w-16 rounded-full bg-accent/20 blur-xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+    <div className="relative w-full overflow-hidden rounded-[2rem] bg-card/[0.5] backdrop-blur-md border border-white/5 p-6 shadow-xl transition-all duration-300 hover:shadow-2xl group">
+      {/* Background Gradient Effect */}
+      <div className="absolute top-0 right-0 -mt-10 -mr-10 w-48 h-48 bg-primary/20 rounded-full blur-[60px]" />
+      <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-[50px]" />
 
-      <div className="relative">
-        <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
-          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-background/50 shadow-glow-primary transition-spring hover:scale-105">
-            <img src={logoImg} alt="BHB Logo" className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
+      <div className="relative z-10 flex justify-between items-center">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+            <Heart className="w-3.5 h-3.5 text-primary fill-primary" />
+            <span>Health Score</span>
           </div>
+
           <div>
-            <h2 className="text-base sm:text-lg font-semibold text-foreground flex items-center gap-2">
-              Visão Geral da Saúde
-              <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 text-primary animate-pulse-slow" />
+            <h2 className="text-3xl font-bold text-white tracking-tight leading-tight">
+              Bem-estar <br /> Geral
             </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">Atualizado em {summary.lastUpdate}</p>
+          </div>
+
+          <div className={cn("inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors duration-200 cursor-pointer hover:bg-opacity-80 backdrop-blur-sm border border-white/5 shadow-sm", statusColor)}>
+            <div className="w-2 h-2 rounded-full bg-current mr-2 animate-pulse" />
+            {statusText}
           </div>
         </div>
 
-        {/* Health Score Circle */}
-        <div className="flex items-center justify-center mb-4 sm:mb-6">
-          <div className="relative group">
-            <svg
-              className="h-28 w-28 sm:h-36 sm:w-36 -rotate-90 transform transition-transform duration-500 group-hover:scale-105"
-              viewBox="0 0 100 100"
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke="hsl(var(--muted))"
-                strokeWidth="8"
-                className="opacity-20"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="40"
-                fill="none"
-                stroke="url(#healthGradient)"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={`${(healthPercentage / 100) * 251.2} 251.2`}
-                className="transition-all duration-1000 ease-out drop-shadow-lg"
-                style={{ filter: 'drop-shadow(0 0 8px hsl(var(--status-healthy) / 0.5))' }}
-              />
-              <defs>
-                <linearGradient id="healthGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="hsl(var(--status-healthy))" />
-                  <stop offset="100%" stopColor="hsl(var(--primary))" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl sm:text-4xl font-bold text-foreground transition-all duration-300 group-hover:scale-110">
-                {healthPercentage}%
-              </span>
-              <span className="text-xs sm:text-sm text-muted-foreground">{healthMessage.text} {healthMessage.emoji}</span>
-            </div>
+        {/* 3D Heart Representation */}
+        <div className="relative w-32 h-32 flex items-center justify-center transform group-hover:scale-105 transition-transform duration-500 ease-in-out">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-500/20 to-pink-600/20 rounded-full blur-2xl animate-pulse-slow" />
+          <div className="relative drop-shadow-[0_10px_10px_rgba(0,0,0,0.3)]">
+            <Heart className="w-24 h-24 text-red-500 fill-red-500 drop-shadow-2xl"
+              style={{
+                filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))',
+                background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                animation: 'pulseSlow 3s ease-in-out infinite'
+              }}
+            />
+            {/* Reflection/Shine effect simulation */}
+            <div className="absolute top-4 left-4 w-6 h-6 bg-white/30 rounded-full blur-sm" />
           </div>
         </div>
+      </div>
 
-        {/* Status Summary */}
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <button
-            onClick={() => onStatusClick?.('healthy')}
-            className={cn(
-              "flex flex-col items-center rounded-xl bg-status-healthy-bg p-2 sm:p-3 card-interactive stagger-1 transition-all border-2 border-transparent",
-              summary.healthy > 0 && "shadow-glow-healthy/30",
-              activeStatuses.includes('healthy') && "border-status-healthy bg-status-healthy/10"
-            )}
-          >
-            <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-status-healthy mb-0.5 sm:mb-1" />
-            <span className="text-xl sm:text-2xl font-bold text-status-healthy">{summary.healthy}</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground">Normal</span>
-          </button>
-
-          <button
-            onClick={() => onStatusClick?.('warning')}
-            className={cn(
-              "flex flex-col items-center rounded-xl bg-status-warning-bg p-2 sm:p-3 card-interactive stagger-2 transition-all border-2 border-transparent",
-              summary.warning > 0 && "shadow-glow-warning/30",
-              activeStatuses.includes('warning') && "border-status-warning bg-status-warning/10"
-            )}
-          >
-            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-status-warning mb-0.5 sm:mb-1" />
-            <span className="text-xl sm:text-2xl font-bold text-status-warning">{summary.warning}</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground">Atenção</span>
-          </button>
-
-          <button
-            onClick={() => onStatusClick?.('danger')}
-            className={cn(
-              "flex flex-col items-center rounded-xl bg-status-danger-bg p-2 sm:p-3 card-interactive stagger-3 transition-all border-2 border-transparent",
-              summary.danger > 0 && "shadow-glow-danger/30",
-              activeStatuses.includes('danger') && "border-status-danger bg-status-danger/10"
-            )}
-          >
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-status-danger mb-0.5 sm:mb-1" />
-            <span className="text-xl sm:text-2xl font-bold text-status-danger">{summary.danger}</span>
-            <span className="text-[10px] sm:text-xs text-muted-foreground">Alterado</span>
-          </button>
-        </div>
-
-        {summary.totalExams > 0 && (
-          <Button
-            variant="outline"
-            className="w-full mt-3 sm:mt-4 btn-press hover-glow transition-smooth text-xs sm:text-sm"
-            onClick={() => navigate('/compare')}
-          >
-            <ArrowLeftRight className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
-            Comparar Exames
-          </Button>
-        )}
+      <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs text-muted-foreground/60 font-medium">
+        <span>Última atualização: Hoje, 09:00</span>
       </div>
     </div>
   );

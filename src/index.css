@@ -6,70 +6,67 @@
 
 @layer base {
   :root {
-    /* Base colors - Vibrant Medical Theme */
-    --background: 200 25% 97%;
-    --foreground: 215 45% 12%;
+    /* Base colors - Premium Health Theme */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 45% 12%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 45% 12%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary - Vibrant Teal */
-    --primary: 168 80% 42%;
+    /* Primary - Sky Blue / Cyan specific to Image 1 and 2 */
+    --primary: 199 89% 48%; /* #0ea5e9 - Sky 500 */
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 168 90% 55%;
+    --primary-glow: 199 89% 60%;
 
     /* Secondary - Cool Slate */
-    --secondary: 210 20% 92%;
-    --secondary-foreground: 215 40% 20%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    --muted: 200 20% 90%;
-    --muted-foreground: 215 15% 45%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 168 60% 94%;
-    --accent-foreground: 168 80% 30%;
+    --accent: 199 89% 95%;
+    --accent-foreground: 199 89% 48%;
 
-    --destructive: 0 85% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 25% 88%;
-    --input: 210 25% 88%;
-    --ring: 168 80% 42%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
 
-    --radius: 1rem;
+    --radius: 1rem; /* Rounded cards as seen in images */
 
-    /* Health Status Colors - More Vibrant */
-    --status-healthy: 152 75% 42%;
-    --status-healthy-bg: 152 70% 94%;
-    --status-warning: 35 95% 52%;
-    --status-warning-bg: 40 95% 94%;
-    --status-danger: 0 80% 55%;
-    --status-danger-bg: 0 75% 95%;
+    /* Health Status Colors */
+    --status-healthy: 142 71% 45%; /* Green-500 */
+    --status-healthy-bg: 142 71% 95%;
+    --status-warning: 32 95% 44%; /* Orange-500 */
+    --status-warning-bg: 32 95% 95%;
+    --status-danger: 0 84% 60%; /* Red-500 */
+    --status-danger-bg: 0 84% 95%;
 
-    /* Enhanced Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(168 80% 42%) 0%, hsl(185 85% 50%) 50%, hsl(200 90% 55%) 100%);
-    --gradient-healthy: linear-gradient(135deg, hsl(152 75% 42%) 0%, hsl(165 70% 48%) 100%);
-    --gradient-warning: linear-gradient(135deg, hsl(35 95% 52%) 0%, hsl(45 100% 58%) 100%);
-    --gradient-danger: linear-gradient(135deg, hsl(0 80% 55%) 0%, hsl(15 85% 58%) 100%);
-    --gradient-background: linear-gradient(160deg, hsl(200 25% 97%) 0%, hsl(195 30% 93%) 50%, hsl(200 20% 95%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(200 25% 98%) 100%);
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(210 100% 50%) 100%);
+    --gradient-healthy: linear-gradient(135deg, hsl(142 71% 45%) 0%, hsl(150 80% 40%) 100%);
+    --gradient-warning: linear-gradient(135deg, hsl(32 95% 44%) 0%, hsl(40 100% 50%) 100%);
+    --gradient-danger: linear-gradient(135deg, hsl(0 84% 60%) 0%, hsl(10 90% 60%) 100%);
+    --gradient-background: linear-gradient(to bottom, hsl(210 40% 98%) 0%, hsl(210 40% 98%) 100%);
+    --gradient-card: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(168 80% 42%) 0%, hsl(200 85% 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(199 89% 48%) 0%, hsl(220 90% 55%) 100%);
 
-    /* Enhanced Shadows */
-    --shadow-sm: 0 2px 8px -2px hsl(215 45% 12% / 0.06), 0 4px 12px -4px hsl(215 45% 12% / 0.08);
-    --shadow-md: 0 8px 24px -6px hsl(215 45% 12% / 0.1), 0 12px 32px -8px hsl(215 45% 12% / 0.12);
-    --shadow-lg: 0 20px 50px -12px hsl(215 45% 12% / 0.15);
-    --shadow-glow-healthy: 0 8px 30px -6px hsl(152 75% 42% / 0.35);
-    --shadow-glow-warning: 0 8px 30px -6px hsl(35 95% 52% / 0.35);
-    --shadow-glow-danger: 0 8px 30px -6px hsl(0 80% 55% / 0.35);
-    --shadow-glow-primary: 0 8px 30px -6px hsl(168 80% 42% / 0.35);
-
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-glow-primary: 0 0 20px hsl(199 89% 48% / 0.35);
+    
     /* Chart colors */
-    --chart-healthy-zone: 152 75% 42%;
-    --chart-line: 168 80% 42%;
+    --chart-healthy-zone: 142 71% 45%;
+    --chart-line: 199 89% 48%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -82,65 +79,67 @@
   }
 
   .dark {
-    --background: 222 47% 6%;
+    /* Deep Slate / Blue Dark Theme matching images */
+    --background: 215 28% 13%; /* #18202b - Deep Dark Blue/Slate */
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 9%;
+    --card: 217 33% 17%; /* #1d2331 - Lighter Slate Card */
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 9%;
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 168 80% 52%;
-    --primary-foreground: 222 47% 6%;
-    --primary-glow: 168 85% 62%;
+    --primary: 199 89% 48%; /* #0ea5e9 - Sky Blue */
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 199 89% 55%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 215 25% 27%; /* Lighter slate for secondary elements */
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 60%;
+    --muted: 215 25% 27%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 168 55% 20%;
-    --accent-foreground: 168 75% 72%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 85% 60%;
 
-    --border: 217 33% 20%;
-    --input: 217 33% 17%;
-    --ring: 168 80% 52%;
+    --border: 215 25% 22%; /* Subtle border */
+    --input: 215 25% 22%;
+    --ring: 199 89% 48%;
 
-    /* Enhanced Health Status Colors for Dark Mode - Higher Contrast */
-    --status-healthy: 152 72% 52%;
-    --status-healthy-bg: 152 50% 15%;
-    --status-warning: 38 92% 55%;
-    --status-warning-bg: 38 70% 15%;
-    --status-danger: 0 78% 58%;
-    --status-danger-bg: 0 55% 15%;
+    /* Health Status Colors */
+    --status-healthy: 142 70% 50%;
+    --status-healthy-bg: 142 70% 20%;
+    --status-warning: 32 95% 50%;
+    --status-warning-bg: 32 95% 20%;
+    --status-danger: 0 84% 60%;
+    --status-danger-bg: 0 84% 20%;
 
-    /* Chart Colors - Vibrant for dark backgrounds */
-    --chart-1: 0 78% 58%;
-    --chart-2: 152 72% 52%;
-    --chart-3: 38 92% 55%;
+    /* Chart Colors */
+    --chart-1: 199 89% 48%;
+    --chart-2: 142 70% 50%;
+    --chart-3: 32 95% 50%;
     --chart-4: 262 83% 63%;
     --chart-5: 199 89% 52%;
-    --chart-healthy-zone: 152 72% 52%;
-    --chart-line: 168 80% 52%;
-    --chart-grid: 217 33% 25%;
+    --chart-healthy-zone: 142 70% 50%;
+    --chart-line: 199 89% 48%;
+    --chart-grid: 215 25% 22%;
 
-    --gradient-background: linear-gradient(160deg, hsl(222 47% 6%) 0%, hsl(222 45% 8%) 50%, hsl(225 45% 7%) 100%);
-    --gradient-card: linear-gradient(145deg, hsl(222 47% 9%) 0%, hsl(222 45% 11%) 100%);
-    --gradient-glass: linear-gradient(135deg, rgba(20, 25, 35, 0.95) 0%, rgba(20, 25, 35, 0.8) 100%);
+    /* Gradient overrides for dark mode */
+    --gradient-background: linear-gradient(to bottom, #10161d 0%, #10161d 100%);
+    --gradient-card: linear-gradient(145deg, #1d2331 0%, #171d29 100%);
+    --gradient-glass: linear-gradient(135deg, rgba(29, 35, 49, 0.9) 0%, rgba(29, 35, 49, 0.7) 100%);
 
-    --sidebar-background: 222 47% 8%;
+     --sidebar-background: 215 28% 13%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 168 80% 52%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 217 33% 17%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 27%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 20%;
-    --sidebar-ring: 168 80% 52%;
+    --sidebar-border: 215 25% 22%;
+    --sidebar-ring: 199 89% 48%;
   }
 }
 

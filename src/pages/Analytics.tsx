@@ -745,8 +745,9 @@ const Analytics = () => {
                 {exams.map((exam, idx) => (
                   <div
                     key={exam.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50 animate-slide-up transition-all duration-300 hover:bg-muted"
+                    className="flex items-center justify-between p-4 rounded-lg bg-muted/50 animate-slide-up transition-all duration-300 hover:bg-muted cursor-pointer"
                     style={{ animationDelay: `${idx * 0.03}s` }}
+                    onClick={() => navigate('/dashboard/health-progress')}
                   >
                     <div className="space-y-1">
                       <p className="font-medium">{exam.name}</p>

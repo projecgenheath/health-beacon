@@ -1,0 +1,138 @@
+{
+    "app_name": "BHB (Biomedical Health Bank)",
+    "description": "Plataforma de gestão de saúde e marketplace de exames laboratoriais.",
+    "user_types": [
+        {
+            "type": "patient",
+            "name": "Paciente",
+            "description": "Usuário que gerencia seus exames e solicita orçamentos."
+        },
+        {
+            "type": "laboratory",
+            "name": "Laboratório",
+            "description": "Parceiro que oferece serviços, envia orçamentos e realiza atendimentos."
+        }
+    ],
+    "functionalities": {
+        "authentication": {
+            "login": "Acesso unificado para todos os tipos de usuário.",
+            "register": "Cadastro com seleção de perfil (Paciente ou Laboratório).",
+            "profile": "Gerenciamento de dados cadastrais e configurações."
+        },
+        "patient_module": {
+            "dashboard": {
+                "overview": "Visão geral com saudação personalizada e resumo de saúde.",
+                "widgets": [
+                    "AI Insights: Análise inteligente dos dados de saúde.",
+                    "Health Goals: Acompanhamento de metas de saúde.",
+                    "Exam Reminders: Lembretes para exames periódicos (configurável).",
+                    "Alerts: Notificações críticas sobre resultados.",
+                    "Upload History: Histórico de status dos arquivos enviados."
+                ]
+            },
+            "exam_management": {
+                "upload": {
+                    "methods": [
+                        "PDF",
+                        "Imagem"
+                    ],
+                    "features": [
+                        "Processamento automático via Edge Function",
+                        "Extração de dados via IA"
+                    ]
+                },
+                "list": "Visualização de exames com filtros (nome, categoria, data, status).",
+                "details": "Visualização detalhada de resultados específicos.",
+                "sharing": "Geração de link público compartilhado para exames.",
+                "export": "Geração de relatórios consolidados em PDF.",
+                "comparison": "Ferramenta para comparar evolução de resultados ao longo do tempo."
+            },
+            "marketplace": {
+                "request_exam": {
+                    "upload_mode": "Upload de pedido médico com leitura automática via IA (Gemma 3 27B).",
+                    "manual_mode": "Seleção manual de exames desejados.",
+                    "urgency_levels": [
+                        "Normal",
+                        "Urgente",
+                        "Emergência"
+                    ]
+                },
+                "quotations": {
+                    "view": "Lista de orçamentos recebidos dos laboratórios.",
+                    "features": [
+                        "Comparação de preços",
+                        "Prazo de entrega",
+                        "Distância do laboratório",
+                        "Avaliação do laboratório"
+                    ]
+                },
+                "scheduling": "Agendamento de coleta/exame após aceite do orçamento."
+            }
+        },
+        "laboratory_module": {
+            "dashboard": {
+                "kpis": [
+                    "Oportunidades (Novos pedidos)",
+                    "Orçamentos Pendentes",
+                    "Taxa de Conversão",
+                    "Agendamentos de Hoje"
+                ],
+                "charts": "Gráfico de produtividade semanal (Conversão vs Agendamentos).",
+                "agenda_preview": "Visualização rápida dos próximos atendimentos."
+            },
+            "service_management": {
+                "catalog": "Gerenciamento (adicionar/remover) de exames oferecidos pelo laboratório."
+            },
+            "opportunity_management": {
+                "requests": "Visualização de pedidos de pacientes compatíveis com o catálogo.",
+                "quotation": "Envio de propostas comerciais (Preço, Prazo, Observações)."
+            },
+            "appointments": "Gestão completa da agenda de coletas e exames."
+        }
+    },
+    "technical_infrastructure": {
+        "frontend": "React, Vite, TailwindCSS, ShadcnUI",
+        "backend": "Supabase (Auth, Database, Storage)",
+        "edge_functions": [
+            {
+                "name": "analyze-medical-request",
+                "purpose": "Extração de exames de pedidos médicos usando IA."
+            },
+            {
+                "name": "process-exam",
+                "purpose": "Processamento de arquivos de resultados de exames."
+            },
+            {
+                "name": "clean-old-database",
+                "purpose": "Manutenção automática do banco de dados."
+            }
+        ],
+        "ai_integration": "Google Gemini (via Edge Function) para análise de textos e imagens."
+    },
+    "routes": {
+        "public": [
+            "/",
+            "/auth",
+            "/register",
+            "/shared/:token"
+        ],
+        "patient": [
+            "/dashboard",
+            "/dashboard/analytics",
+            "/dashboard/compare",
+            "/dashboard/reports",
+            "/profile",
+            "/exam/:examId",
+            "/patient/request-exam",
+            "/patient/quotations",
+            "/patient/schedule-appointment"
+        ],
+        "laboratory": [
+            "/laboratory/dashboard",
+            "/laboratory/requests",
+            "/laboratory/appointments",
+            "/laboratory/exam-requests",
+            "/laboratory/services"
+        ]
+    }
+}
